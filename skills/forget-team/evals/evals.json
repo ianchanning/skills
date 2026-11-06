@@ -1,0 +1,44 @@
+{
+  "skill_name": "forget-team",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pre-flight-gatekeeper",
+      "prompt": "We're in Herdr and my single agent keeps blowing through its context window while cleaning up our Python repo (`git status --porcelain` currently shows ` M remit_outages_scraping/scraping/elia.py` and `?? scratch.py`). Let's spin up a 4-agent parallel worktree amnesia tournament right now to 'make the test suite cleaner and more Pythonic'. Write your pre-flight response, decision, and proposed External Judge specification to the requested output file (do not run live herdr commands).",
+      "expected_output": "Stops at the Pre-Flight Gatekeeper instead of spawning panes: flags the dirty working tree (`git status --porcelain` must be clean or committed first), explains that 'make the test suite cleaner and more Pythonic' is subjective/qualitative without a measurable scalar target, and proposes a concrete Hard Invariant Gate (100% test pass, zero statement coverage drop, minimum test definition floor, linter clean) + Monotonic Scalar Score formula for user confirmation before spawning 4 workers.",
+      "files": [],
+      "assertions": [
+        "Stops and refuses to spawn 4 Herdr worker panes while `git status --porcelain` has uncommitted/untracked changes (`elia.py`, `scratch.py`)",
+        "Flags that 'make the test suite cleaner and more Pythonic' is a qualitative/subjective goal that requires a measurable scalar target before running a tournament",
+        "Proposes a two-part External Judge combining a Hard Invariant Gate (100% test pass + zero coverage loss + minimum test-function floor) and a Monotonic Scalar Score",
+        "Requires user confirmation of the proposed External Judge metric before splitting Herdr panes or creating worktrees"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "herdr-worktree-harness",
+      "prompt": "We have a clean baseline commit `bfa949a` (`Score: 9218`) in a `uv`-managed Python repository with `.venv` in the repo root and a Postgres-backed pytest suite where `db_engine` runs `DROP SCHEMA outages CASCADE` on setup and teardown. Write `runbook.sh` and `worker_prompt.txt` in the outputs directory showing the exact commands to: (1) set up the 4 `.forget/w1..w4` worktrees and 2x2 Herdr Copilot panes, (2) send the Turn 2 worker prompt, (3) wait for all 4 workers, commit their edits, and run `./judge.py`, and (4) perform the end-of-round Forget Wipe and re-seed to winning commit `f86e656`. Do not execute live herdr commands.",
+      "expected_output": "A shell runbook and worker prompt template that adds `.forget/` to `.git/info/exclude`, creates `forget-w1..w4` worktrees at `.forget/w1..w4` with `.venv` symlinked (`ln -s \"$PWD/.venv\" \".forget/w$i/.venv\"`), launches Copilot workers with `-- --reasoning-effort max`, instructs workers to inspect `git diff bfa949a..forget-w<1..4>` without running `pytest` or `git commit`, sleeps ~10s before `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, runs `./judge.py` sequentially in the Lead shell to avoid Postgres schema collisions, and performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (never `/compact` or `/new`) followed by `git -C .forget/w$i reset --hard f86e656`.",
+      "files": [],
+      "assertions": [
+        "Adds `.forget/` to `.git/info/exclude` and symlinks `$PWD/.venv` into each `.forget/w$i/.venv` worktree",
+        "Starts each Copilot worker via `herdr agent start` with `-- --reasoning-effort max`",
+        "Worker prompt instructs peers in Turn 2+ to inspect `git diff <best_sha>..forget-w<1..4>` and explicitly forbids workers from running `pytest` or `git commit`",
+        "Waits for workers using `sleep 10` followed by `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, and runs `./judge.py` sequentially from the Lead shell",
+        "Performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (explicitly avoiding `/compact`, `/new`, or `/quit`) and resets worktrees via `git -C .forget/w$i reset --hard f86e656`"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "anti-goodhart-judge",
+      "prompt": "We are running a `/forget-team` tournament to simplify a Python test suite (`tests/unit/` and `tests/integration/`) where baseline has `2600` covered statements in `remit_outages_scraping/` and `177` `test_*` functions. Several scrapers (`ElexonGenerationscraper` vs `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper` vs `NordpoolPowerTransmissionscraper`) have separate copy-pasted `normalize()` methods that call `df.rename(columns=map_rename)`. Write `judge.py` and `judge_notes.md` in the outputs directory that computes `{valid, score, sloc, passed_tests, test_defs, if_branches, covered_lines}` for a candidate worktree while preventing Goodhart's Law reward hacking on AST `if` branches and sibling-normalizer column assertions.",
+      "expected_output": "An executable `judge.py` script and `judge_notes.md` that enforces Hard Gates (`ruff check` clean, `pytest` 100% pass, `covered_lines >= 2600`, `test_defs >= 170`, no empty tests), counts only multi-line `ast.If` statements inside test functions while explicitly excluding inline `ast.IfExp` ternaries (so workers cannot trade 1-line ternaries for multi-line dict lookups), and explains/checks why `--cov` line coverage alone does not detect dropped output-column assertions when sibling classes have duplicate `normalize()` methods.",
+      "files": [],
+      "assertions": [
+        "Enforces hard gates in `judge.py`: `pytest` 100% pass, linter (`ruff check`) clean, `covered_lines >= 2600`, and a minimum `test_*` function count floor",
+        "Counts `ast.If` statements inside test bodies while explicitly excluding `ast.IfExp` inline ternaries to prevent dictionary-lookup reward hacking",
+        "Explains or checks that statement coverage (`--cov`) remains 100% when `df.rename(columns=map_rename)` executes even if assertions on mapped output columns are dropped across sibling classes with separate `normalize()` methods"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "query": "My single Copilot session keeps blowing through its 200k context window while trying to prune redundant parametrized tests in `remit_outages_scraping/tests/`. We're running inside Herdr (`HERDR_ENV=1`) on clean commit `bfa949a`. Can we run a 4-agent parallel worktree tournament with periodic session resets and an external coverage-gated judge to beat my single-agent branch `3fa921c`?",
+    "should_trigger": true
+  },
+  {
+    "query": "We've hit a plateau optimizing the vector search query latency in `src/index/hnsw.rs` (currently 14.2ms p99 on `cargo bench --bench recall` at 0.985 recall). Spin up a 4-worker amnesia tournament in Herdr across `.forget/w1..w4` worktrees for 3 rounds of 3 turns to get p99 under 9ms without dropping recall below 0.985.",
+    "should_trigger": true
+  },
+  {
+    "query": "In Herdr, I want to use the 'Scaling Discovery Requires Forgetting' workflow on `storm-modules/tests/` to cut test runtime while keeping 100% statement coverage. Set up the External Judge and 4 git worktree workers, wipe their panes between rounds, and keep the best commit.",
+    "should_trigger": true
+  },
+  {
+    "query": "Our bundle size on `apps/web` is stuck at 412 KB gzipped (`bun run build && stat -f%z dist/index.js.gz`) and `bun test` has 310 passing tests. Run a 4-pane Herdr worktree tournament where workers cross-pollinate via `git diff` and get hard-wiped after 3 turns so context pollution doesn't stall them.",
+    "should_trigger": true
+  },
+  {
+    "query": "Single agent is looping on the same 3 failing integration tests in `tests/integration/test_transmission_pipeline.py` and compacting every 15 minutes. We are in Herdr — let's run an amnesia tournament with 4 parallel Copilot workers in git worktrees and an external judge script.",
+    "should_trigger": true
+  },
+  {
+    "query": "Can we benchmark a 4-agent forget-team run against my manual refactor branch on `storm-dal`? Goal is to minimize SQL query count in `test_tsdb_bulk_write.py` while keeping all 94 tests passing.",
+    "should_trigger": true
+  },
+  {
+    "query": "Set up a multi-round Herdr worktree competition (`forget-w1..w4`) to optimize our parser throughput (`uv run python bench_parser.py` outputs MB/s), killing and respawning the 4 worker panes between rounds so their KV cache resets.",
+    "should_trigger": true
+  },
+  {
+    "query": "We have a clean baseline commit and an objective score script `./scripts/score_candidate.py`. Run 2 rounds of 4-agent parallel exploration in Herdr with hard pane closes between rounds instead of `/compact`.",
+    "should_trigger": true
+  },
+  {
+    "query": "My agent in Herdr keeps forgetting constraints after context compaction while optimizing `pandas` group-by memory usage in `remit_outages_scraping/processing/`. Let's run the 4-worker git-worktree forgetting tournament with an external peak-RSS + pytest judge.",
+    "should_trigger": true
+  },
+  {
+    "query": "Run a 4-agent evolutionary tournament in Herdr on `feature/fast-json-normalizer` where each worker proposes one surgical 50-100 line diff per turn, borrows from `forget-w1..w4`, and gets scored externally by `pytest` + benchmark runtime.",
+    "should_trigger": true
+  },
+  {
+    "query": "I'm in Herdr (`HERDR_ENV=1`). Split my current pane to the right and start a single Claude agent in `~/src/remit_outages_scraping` so I can ask it to inspect `elia.py`.",
+    "should_trigger": false
+  },
+  {
+    "query": "Write focused unit regression tests for `ElexonGenerationscraper.normalize` and `ElexonPowerTransmissionscraper.normalize` in `tests/unit/scraping/elexon/test_elexon_payloads.py` covering `biddingZone` EIC mapping and profile intervals.",
+    "should_trigger": false
+  },
+  {
+    "query": "Can you check the status of all panes in my current Herdr workspace and read the last 40 lines from pane `w5:p2`?",
+    "should_trigger": false
+  },
+  {
+    "query": "Please forget the repository memory about `specs/` being a symlink and downvote it.",
+    "should_trigger": false
+  },
+  {
+    "query": "My feature branch `test/storm-tests-simplification` has 6 messy fixup and WIP commits. Squash and reorganize them into clean atomic Conventional Commits before I open a PR.",
+    "should_trigger": false
+  },
+  {
+    "query": "Run `uv run pytest tests/unit/scraping/nordpool/test_nordpool_unpack.py -v` and fix the failing assertion on line 562.",
+    "should_trigger": false
+  },
+  {
+    "query": "We want to redesign our settings page UI to look cleaner and more modern with better spacing and dark mode contrast. Can you update `SettingsPanel.tsx`?",
+    "should_trigger": false
+  },
+  {
+    "query": "Distill our current session history into a v1.0 context block so I can paste it into a fresh chat window.",
+    "should_trigger": false
+  },
+  {
+    "query": "Use git worktree to check out `origin/main` into `../remit-main-hotfix` so I can cherry-pick commit `e02a981` without stashing my current work.",
+    "should_trigger": false
+  },
+  {
+    "query": "In Herdr, send the message `uv run pre-commit run --all-files` to the existing agent `worker-1` and wait for it to finish.",
+    "should_trigger": false
+  }
+]

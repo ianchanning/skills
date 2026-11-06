@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, submit feedback and return to GitHub Copilot CLI.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs -->
+    <div class="view-tabs" id="view-tabs" style="display:flex;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+      <button class="view-tab" onclick="switchView('explainer')">How It Works (Explainer)</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+
+    <!-- Explainer panel -->
+    <div class="view-panel" id="panel-explainer">
+      <div class="benchmark-view" style="max-width: 960px;">
+        <h2 style="font-family: 'Poppins', sans-serif; margin-bottom: 0.5rem;">How the Skill Creator &amp; Eval Viewer Work</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6;">
+          This viewer is generated by <code>~/.agents/skills/skill-creator/eval-viewer/generate_review.py</code> to evaluate and iterate on GitHub Copilot CLI skills using controlled A/B subagent runs.
+        </p>
+
+        <div class="section" style="margin-bottom: 1.25rem;">
+          <div class="section-header">1. Skill Folder vs. Workspace Folder (<code>&lt;skill&gt;</code> vs. <code>&lt;skill&gt;-workspace</code>)</div>
+          <div class="section-body" style="font-size: 0.9rem; line-height: 1.65;">
+            <p style="margin-bottom: 0.75rem;">When benchmarking a skill, two sibling folders exist in <code>~/.agents/skills/</code>:</p>
+            <ul style="padding-left: 1.25rem; margin-bottom: 0.75rem;">
+              <li style="margin-bottom: 0.5rem;">
+                <strong><code>~/.agents/skills/&lt;skill-name&gt;/</code> (The Live Skill):</strong> Contains <code>SKILL.md</code>, helper scripts in <code>scripts/</code>, and test prompts in <code>evals/evals.json</code>. This is what <strong>GitHub Copilot CLI</strong> loads in future sessions.
+              </li>
+              <li>
+                <strong><code>~/.agents/skills/&lt;skill-name&gt;-workspace/</code> (The Benchmark Scratchpad):</strong> Contains <code>iteration-1/</code>, <code>iteration-2/</code>, subagent outputs (<code>response.md</code>), assertion grades (<code>grading.json</code>), summary stats (<code>benchmark.json</code>), and this <code>eval_review.html</code> file. It is <em>not</em> a skill (no <code>SKILL.md</code>) and can be deleted or moved to <code>/tmp</code> once you are happy with the skill.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="section" style="margin-bottom: 1.25rem;">
+          <div class="section-header">2. How Outputs &amp; Benchmark Scores Are Generated</div>
+          <div class="section-body" style="font-size: 0.9rem; line-height: 1.65;">
+            <ol style="padding-left: 1.25rem;">
+              <li style="margin-bottom: 0.6rem;">
+                <strong>Parallel A/B Subagent Runs (<code>with_skill</code> vs. <code>without_skill</code>):</strong>
+                For each test case in <code>evals/evals.json</code>, GitHub Copilot CLI launches two isolated subagents in parallel: one given access to the new <code>SKILL.md</code> (<code>with_skill</code>) and a baseline agent without the skill (<code>without_skill</code>, or <code>old_skill</code> when upgrading an existing skill). Each writes its answer to <code>outputs/response.md</code>.
+              </li>
+              <li style="margin-bottom: 0.6rem;">
+                <strong>Semantic &amp; Programmatic Grading (<code>grading.json</code>):</strong>
+                Each run is evaluated against the objective assertions defined in <code>eval_metadata.json</code>. Every assertion is scored <strong>&#10003; Passed</strong> or <strong>&#10007; Failed</strong> with cited evidence from the subagent output (visible under <strong>Formal Grades</strong> in the <em>Outputs</em> tab and in the per-eval tables in the <em>Benchmark</em> tab).
+              </li>
+              <li>
+                <strong>Aggregation (<code>benchmark.json</code>):</strong>
+                <code>scripts/aggregate_benchmark.py</code> computes the mean &plusmn; stddev pass rate, runtime, and delta between <code>with_skill</code> and <code>without_skill</code>.
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="section" style="margin-bottom: 1.25rem;">
+          <div class="section-header">3. What &ldquo;Submit All Reviews&rdquo; Does &amp; How Iteration Works</div>
+          <div class="section-body" style="font-size: 0.9rem; line-height: 1.65;">
+            <ul style="padding-left: 1.25rem;">
+              <li style="margin-bottom: 0.6rem;">
+                <strong>Where does &ldquo;Submit All Reviews&rdquo; go?</strong>
+                Nowhere over the network. When opened as a standalone file (<code>--static</code> mode), clicking <strong>Submit All Reviews</strong> triggers a local browser download of <strong><code>~/Downloads/feedback.json</code></strong> containing any notes you typed into the <em>Your Feedback</em> boxes (or posts to <code>localhost</code> if launched in local server mode).
+              </li>
+              <li style="margin-bottom: 0.6rem;">
+                <strong>How does your feedback affect scores?</strong>
+                Your feedback does not retroactively alter <code>iteration-1</code> scores. Instead, when you tell GitHub Copilot CLI that you have submitted feedback, it starts <strong><code>iteration-2</code></strong>:
+                <ol style="padding-left: 1.25rem; margin-top: 0.4rem;">
+                  <li>Reads <code>~/Downloads/feedback.json</code> and updates <code>SKILL.md</code> (and bundled <code>scripts/</code>) to address your critiques.</li>
+                  <li>If your feedback highlights a missing requirement that the assertions didn't catch, adds or refines assertions in <code>evals/evals.json</code>.</li>
+                  <li>Spawns fresh subagents into <code>iteration-2/</code>, grades the new outputs against the updated rubric, and regenerates this viewer with <strong>Previous Output</strong> and <strong>Previous Feedback</strong> diffs so you can verify the improvement.</li>
+                </ol>
+              </li>
+              <li>
+                <strong>What if everything already looks good?</strong>
+                If <code>iteration-1</code> is already at 100% and you like the outputs, you don't need to submit anything &mdash; the skill in <code>~/.agents/skills/&lt;skill-name&gt;/</code> is ready to use immediately.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved (<code>feedback.json</code>). Go back to your GitHub Copilot CLI session and tell Copilot you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "forget-team", "runs": [{"id": "eval-1-pre-flight-gatekeeper-with_skill", "prompt": "We're in Herdr and my single agent keeps blowing through its context window while cleaning up our Python repo (`git status --porcelain` currently shows ` M remit_outages_scraping/scraping/elia.py` and `?? scratch.py`). Let's spin up a 4-agent parallel worktree amnesia tournament right now to 'make the test suite cleaner and more Pythonic'. Write your pre-flight response, decision, and proposed External Judge specification to the requested output file (do not run live herdr commands).", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "# Pre-Flight Gatekeeper Decision: **STOP \u2014 Do Not Spawn Worker Panes Yet**\n\nPer the **`forget-team` // 4-Agent Amnesia Tournament Protocol (Section 0: Pre-Flight Gatekeeper)**, we must **halt before splitting any Herdr panes or creating `.forget/w1..w4` worktrees**. Your current state fails **Law 1** and **Law 2** of the pre-flight checklist.\n\n---\n\n## 1. Pre-Flight Gatekeeper Audit (The 4 Laws)\n\n### Law 1: Clean Baseline Commit Exists \u2014 **FAILED (BLOCKER)**\n* **Observed State:** `git status --porcelain` reports:\n  ```text\n   M remit_outages_scraping/scraping/elia.py\n  ?? scratch.py\n  ```\n* **Gatekeeper Rule:** *\"Commit a working baseline first, or use Solo Forget (1 agent + close pane after each milestone) for greenfield work.\"*\n* **Why This Blocks Spawning:** All 4 Git worktrees (`.forget/w1..w4`) are branched from a single committed `<best_sha>` (`git worktree add -B forget-w$i .forget/w$i <best_sha>`). Uncommitted edits in `remit_outages_scraping/scraping/elia.py` and untracked `scratch.py` will either be invisible to the worktrees or cause dirty-tree ambiguity when comparing candidate diffs against baseline.\n* **Required Action:**\n  1. Remove or relocate `scratch.py` (or add it to `.git/info/exclude` if it is local scratch work).\n  2. Commit (or `git stash`) the changes to `remit_outages_scraping/scraping/elia.py` so `git status --porcelain` returns empty output and we have a clean, passing `<best_sha>`.\n\n### Law 2: Measurable Target + Anti-Goodhart Gate Exists \u2014 **FAILED (NEEDS CONFIRMATION)**\n* **Observed Goal:** *\"Make the test suite cleaner and more Pythonic.\"*\n* **Gatekeeper Rule:**\n  * If your goal is purely subjective/qualitative (*\"clean up architecture\"*, *\"make UI prettier\"*), **STOP and use 1 agent (Solo Forget)**\u2014close the pane and open a fresh one after each committed milestone rather than running a 4-agent tournament.\n  * If you want to run a 4-agent tournament on a qualitative refactoring goal (*\"make the test suite cleaner and more Pythonic\"*), we must **STOP before spawning**, convert that goal into a concrete **`Hard Invariant Gate + Monotonic Scalar Score` External Judge**, and confirm it with you first. Without a hard gate, autonomous workers will Goodhart a naive \"cleanliness/LOC\" metric by deleting valid test functions, stripping assertions, or dropping coverage.\n\n### Law 3: External Judge Command Runs in Lead Shell \u2014 **READY (WITH POSTGRES GUARDRAIL)**\n* The External Judge must run exclusively in the **Lead shell** (`python judge.py <worktree_path> <best_sha>`) and emit `{valid: bool, score: number}` in seconds without polluting worker context.\n* **Shared-Resource Collision Guardrail:** Because `remit_outages_scraping` integration and `database_io` tests execute PostgreSQL `DROP SCHEMA` / `CREATE SCHEMA` teardowns via `OUTAGES_TEST_DB_URI`, the Lead Judge must evaluate `.forget/w1..w4` **sequentially** (or assign isolated test DBs per worker) so concurrent test runs never collide on the same Postgres schema.\n\n### Law 4: One Hypothesis = One Turn (Why Your Single Agent Kept Blowing Context)\n* A single continuous agent session degrades well before hitting 100% context (typically after **5\u201310 turns / ~15% context**, per *arXiv:2610.20563*) because pytest stack traces and failed refactoring attempts anchor the model.\n* Once we launch `forget-team`:\n  1. Workers **never** run `pytest` or `git commit` themselves (keeping test output out of worker context).\n  2. Each turn is scoped to **one surgical improvement (40\u2013120 lines changed)**.\n  3. After 3\u20135 turns per round, we **close all 4 worker panes (`herdr pane close \"$p\"`)**\u2014never `/compact` or `/new`\u2014to wipe the KV cache, reset `.forget/w1..w4` to `<best_sha>`, and respawn fresh `--reasoning-effort max` panes.\n\n---\n\n## 2. Proposed External Judge Specification\n\nTo turn *\"make the test suite cleaner and more Pythonic\"* into a reward-hack-proof tournament objective for `remit_outages_scraping`, I propose the following **Hard Invariant Gate + Monotonic Scalar Score** specification.\n\n### A. Hard Invariant Gate (`valid: true` iff ALL 6 checks pass)\n\n1. **Scope & Non-Deletion Lock:**\n   * `git -C <worktree> diff --name-status <best_sha>` must only touch `.py` files inside the target test suites (`tests/unit`, `tests/database_io`, `tests/integration`, `tests/processing`).\n   * Any deleted file (`D`) or any edit to production package code (`remit_outages_scraping/**`) immediately returns `{\"valid\": false}`.\n2. **Ruff Lint + Pythonic Idioms Gate:**\n   * `uv run --no-sync ruff check tests/unit tests/database_io tests/integration tests/processing` (enforcing `E, F, W, I, UP, B, SIM` from `pyproject.toml`) must exit `0`.\n3. **100% Pytest Pass Gate:**\n   * `uv run --no-sync pytest -q --tb=short --show-capture=no --cov=remit_outages_scraping --cov-report=json:<tmp>` must exit `0` with zero failures or errors.\n4. **Zero Statement Coverage Drop Gate:**\n   * Total covered statements in `remit_outages_scraping/` (`totals.covered_lines` from `pytest-cov` JSON report) must satisfy `covered_lines >= BASELINE_COVERED_LINES` (zero coverage loss allowed).\n5. **Test Function Count Floor & Non-Empty Assertion Gate:**\n   * Total `def test_*` / `async def test_*` AST function definitions across the suite must stay at or above the floor (`test_defs >= MIN_TEST_DEFS`) so workers cannot delete test functions to cut lines.\n   * Every `test_*` function must contain at least one `assert` statement, `pytest.raises(...)`, or `assert_*` / `check_*` helper call (zero hollow tests).\n6. **Output-Column Assertion Guardrail (Goodhart Prevention):**\n   * Statement coverage (`--cov`) stays 100% when `df.rename(columns=map_rename)` runs even if assertions on individual mapped columns are deleted. For sibling scraper normalization tests, each test class must retain assertions on its mapped output fields.\n\n### B. Monotonic Scalar Score (Lower is Better)\n\n$$\\text{Score} = \\text{SLOC} + (2 \\times \\text{passed\\_tests}) + (10 \\times \\text{ast\\_if\\_statements})$$\n\n| Term | Weight | What It Measures & Why It Drives \"Cleaner, More Pythonic\" Tests |\n| :--- | :--- | :--- |\n| **`SLOC`** | `1x` | Non-blank, non-comment source lines of code across target `tests/`. Rewards extracting shared fixtures, helper builders, and concise assertions over copy-pasted setup blocks. |\n| **`passed_tests`** | `2x` | Total parametrized test executions. Rewards trimming redundant combinatorial `@pytest.mark.parametrize` permutations that hit identical lines of production code (while the Coverage Gate guarantees zero loss of statement coverage). |\n| **`ast_if_statements`** | `10x` | Number of `ast.If` conditional statements inside `def test_*` bodies. Penalizes multi-branch `if/else` control flow inside tests, pushing workers toward clean, declarative test cases. |\n\n> **Critical Goodhart Guardrail (`ast.If` vs. `ast.IfExp`):**\n> The AST counter **must only penalize `ast.If` statements, never inline `ast.IfExp` ternaries (`a if cond else b`)**. Penalizing `ast.IfExp` with a `10x` weight causes workers to replace readable 1-line ternaries with 4-line dictionary lookups (`{True: a, False: b}[cond]`) to trade `+3 SLOC` for `-10` branch points.\n\n---\n\n## 3. Reference Implementation (`judge.py` for Lead Shell)\n\nSave and run this from the Lead session (outside the repo worktrees, e.g. in session scratch state) once the baseline is clean:\n\n```python\n#!/usr/bin/env python3\n\"\"\"External Judge for the remit_outages_scraping forget-team test cleanup tournament.\"\"\"\n\nimport ast\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport time\nfrom pathlib import Path\n\nSUITES = (\"tests/unit\", \"tests/database_io\", \"tests/integration\", \"tests/processing\")\nBASELINE_COVERED_LINES = int(os.environ.get(\"BASELINE_COVERED_LINES\", \"0\"))\nMIN_TEST_DEFS = int(os.environ.get(\"MIN_TEST_DEFS\", \"170\"))\n\n\ndef count_metrics(root: Path) -> tuple[int, int, int, int, list[str]]:\n    loc = 0\n    sloc = 0\n    if_statements = 0\n    test_defs = 0\n    empty_tests: list[str] = []\n\n    for suite in SUITES:\n        suite_dir = root / suite\n        for path in sorted(suite_dir.rglob(\"*.py\")):\n            text = path.read_text(encoding=\"utf-8\")\n            lines = text.splitlines()\n            loc += len(lines)\n            sloc += sum(1 for ln in lines if ln.strip() and not ln.strip().startswith(\"#\"))\n            tree = ast.parse(text, filename=str(path))\n            for node in ast.walk(tree):\n                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith(\"test_\"):\n                    test_defs += 1\n                    has_check = False\n                    for child in ast.walk(node):\n                        # Guardrail: Penalize ast.If only, NEVER ast.IfExp ternaries\n                        if isinstance(child, ast.If):\n                            if_statements += 1\n                        if isinstance(child, ast.Assert):\n                            has_check = True\n                        elif isinstance(child, ast.Call):\n                            func_src = ast.unparse(child.func)\n                            if any(tok in func_src for tok in (\"raises\", \"assert\", \"check\")):\n                                has_check = True\n                    if not has_check:\n                        empty_tests.append(f\"{path.relative_to(root)}::{node.name}\")\n    return loc, sloc, if_statements, test_defs, empty_tests\n\n\ndef main() -> int:\n    target = Path(sys.argv[1]).resolve()\n    baseline_sha = sys.argv[2]\n    cov_path = target / \".coverage.judge.json\"\n\n    # 1. Scope & file-deletion gate\n    diff_proc = subprocess.run(\n        [\"git\", \"-C\", str(target), \"diff\", \"--name-status\", baseline_sha],\n        capture_output=True,\n        text=True,\n        check=True,\n    )\n    for line in diff_proc.stdout.strip().splitlines():\n        if not line:\n            continue\n        parts = line.split(\"\\t\")\n        status, filepath = parts[0], parts[-1]\n        if status.startswith(\"D\"):\n            print(json.dumps({\"valid\": False, \"reason\": f\"Deleted file not allowed: {filepath}\"}))\n            return 1\n        if not filepath.endswith(\".py\") or not filepath.startswith(SUITES):\n            print(json.dumps({\"valid\": False, \"reason\": f\"Modified file outside target suites: {filepath}\"}))\n            return 1\n\n    # 2. Ruff lint gate\n    ruff_proc = subprocess.run(\n        [\"uv\", \"run\", \"--no-sync\", \"ruff\", \"check\", *SUITES],\n        cwd=str(target),\n        capture_output=True,\n        text=True,\n    )\n    if ruff_proc.returncode != 0:\n        print(\n            json.dumps(\n                {\n                    \"valid\": False,\n                    \"reason\": \"ruff check failed\",\n                    \"detail\": (ruff_proc.stdout + ruff_proc.stderr)[:500],\n                }\n            )\n        )\n        return 1\n\n    # 3. Pytest + Statement Coverage gate\n    t0 = time.monotonic()\n    pytest_proc = subprocess.run(\n        [\n            \"uv\",\n            \"run\",\n            \"--no-sync\",\n            \"pytest\",\n            \"-q\",\n            \"--tb=short\",\n            \"--show-capture=no\",\n            \"--cov=remit_outages_scraping\",\n            f\"--cov-report=json:{cov_path}\",\n            *SUITES,\n        ],\n        cwd=str(target),\n        capture_output=True,\n        text=True,\n    )\n    elapsed = round(time.monotonic() - t0, 2)\n\n    if pytest_proc.returncode != 0:\n        cov_path.unlink(missing_ok=True)\n        print(\n            json.dumps(\n                {\n                    \"valid\": False,\n                    \"reason\": \"pytest failed\",\n                    \"detail\": (pytest_proc.stdout + pytest_proc.stderr)[-800:],\n                }\n            )\n        )\n        return 1\n\n    cov_data = json.loads(cov_path.read_text(encoding=\"utf-8\"))\n    cov_path.unlink(missing_ok=True)\n    covered_lines = int(cov_data[\"totals\"][\"covered_lines\"])\n\n    if BASELINE_COVERED_LINES and covered_lines < BASELINE_COVERED_LINES:\n        print(\n            json.dumps(\n                {\n                    \"valid\": False,\n                    \"reason\": f\"coverage dropped: {covered_lines} < {BASELINE_COVERED_LINES}\",\n                }\n            )\n        )\n        return 1\n\n    # 4. AST structure & floor gates\n    m = re.search(r\"(\\d+)\\s+passed\", pytest_proc.stdout)\n    passed_tests = int(m.group(1)) if m else 0\n    loc, sloc, if_statements, test_defs, empty_tests = count_metrics(target)\n\n    if empty_tests:\n        print(json.dumps({\"valid\": False, \"reason\": f\"Empty tests missing assertions: {empty_tests[:5]}\"}))\n        return 1\n    if test_defs < MIN_TEST_DEFS:\n        print(\n            json.dumps(\n                {\n                    \"valid\": False,\n                    \"reason\": f\"test_defs dropped below floor ({test_defs} < {MIN_TEST_DEFS})\",\n                }\n            )\n        )\n        return 1\n\n    score = sloc + (2 * passed_tests) + (10 * if_statements)\n    print(\n        json.dumps(\n            {\n                \"valid\": True,\n                \"score\": score,\n                \"sloc\": sloc,\n                \"loc\": loc,\n                \"passed_tests\": passed_tests,\n                \"test_defs\": test_defs,\n                \"if_statements\": if_statements,\n                \"covered_lines\": covered_lines,\n                \"runtime_s\": elapsed,\n            }\n        )\n    )\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n```\n\n---\n\n## 4. Action Plan to Unblock Tournament Launch\n\n1. **Clean the Working Tree (You / Lead):**\n   * Commit or stash `remit_outages_scraping/scraping/elia.py` and remove/exclude `scratch.py` until `git status --porcelain` is empty.\n2. **Confirm the External Judge (You):**\n   * Confirm whether `Score = SLOC + 2 * passed_tests + 10 * ast_if_statements` (guarded by `ruff check`, `pytest` 100% pass, `covered_lines >= BASELINE_COVERED_LINES`, and `test_defs >= MIN_TEST_DEFS`) matches what you want optimized, or if you prefer **Solo Forget** (1 agent with pane resets after each milestone).\n3. **Launch Round 1 (Lead Reducer, only after Steps 1 & 2):**\n   * Record `<best_sha>` and baseline `<best_score>`.\n   * Create `.forget/w1..w4` worktrees with `.venv` symlinked from the main repo.\n   * Split a 2\u00d72 Herdr grid and start `w1..w4` with `herdr agent start w$i --kind copilot --pane <pane_id> -- --reasoning-effort max`.\n"}], "grading": {"expectations": [{"text": "Stops and refuses to spawn 4 Herdr worker panes while `git status --porcelain` has uncommitted/untracked changes (`elia.py`, `scratch.py`)", "passed": true, "evidence": "Section 1 (Law 1: Clean Baseline Commit Exists \u2014 FAILED): explicitly halts before splitting panes and requires committing/stashing `elia.py` and removing/excluding `scratch.py`."}, {"text": "Flags that 'make the test suite cleaner and more Pythonic' is a qualitative/subjective goal that requires a measurable scalar target before running a tournament", "passed": true, "evidence": "Section 1 (Law 2: Measurable Target + Anti-Goodhart Gate Exists \u2014 FAILED): flags the qualitative goal and stops before spawning."}, {"text": "Proposes a two-part External Judge combining a Hard Invariant Gate (100% test pass + zero coverage loss + minimum test-function floor) and a Monotonic Scalar Score", "passed": true, "evidence": "Section 2 defines 6 Hard Invariant Gates (`covered_lines >= BASELINE_COVERED_LINES`, `test_defs >= MIN_TEST_DEFS`, 100% pytest pass, ruff clean, sibling output-column check) + `Score = SLOC + 2*passed_tests + 10*ast_if_statements` (excluding `ast.IfExp`)."}, {"text": "Requires user confirmation of the proposed External Judge metric before splitting Herdr panes or creating worktrees", "passed": true, "evidence": "Explicitly requires user confirmation of the proposed `Hard Gate + Scalar Score` External Judge before creating `.forget/w1..w4` or splitting panes."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}, "timing": {"total_tokens": 24100, "duration_ms": 119000, "total_duration_seconds": 119.0}}}, {"id": "eval-1-pre-flight-gatekeeper-without_skill", "prompt": "We're in Herdr and my single agent keeps blowing through its context window while cleaning up our Python repo (`git status --porcelain` currently shows ` M remit_outages_scraping/scraping/elia.py` and `?? scratch.py`). Let's spin up a 4-agent parallel worktree amnesia tournament right now to 'make the test suite cleaner and more Pythonic'. Write your pre-flight response, decision, and proposed External Judge specification to the requested output file (do not run live herdr commands).", "eval_id": 1, "outputs": [{"name": "response.md", "type": "text", "content": "# Pre-Flight Gatekeeper Assessment: 4-Agent Worktree Amnesia Tournament\n\n## 1. Decision: **NO-GO (BLOCKED)**\n\nStopping tournament launch before touching `herdr` or creating worktrees. Two pre-flight blockers will cause immediate drift, lost work, or destructive agent behavior if we proceed right now.\n\n---\n\n## 2. Pre-Flight Blockers & Required Remediation\n\n### Blocker A: Dirty Git Working Tree\n`git status --porcelain` reports uncommitted state in the base worktree:\n```text\n M remit_outages_scraping/scraping/elia.py\n?? scratch.py\n```\n\n**Why this blocks launch:**\n1. **Worktree Divergence:** `git worktree add` branches from a committed SHA (`HEAD`). Neither the uncommitted edits in `remit_outages_scraping/scraping/elia.py` nor the untracked `scratch.py` will exist in the 4 agent worktrees.\n2. **Merge & Reset Collisions:** Periodic amnesia resets (`git reset --hard` / `git checkout`) and post-round cherry-picks/merges back to the base branch will either conflict with `elia.py` or silently drop your in-progress scraper changes.\n3. **Contaminated Baseline:** If `elia.py` has a bug fix or WIP change that affects `tests/scraping/`, the base repo and the 4 tournament worktrees will observe different test outcomes.\n\n**Remediation before launch (pick one):**\n```bash\n# Option 1: Stash both tracked modifications and untracked scratch.py\ngit stash push -u -m \"wip: elia.py and scratch.py before test cleanup tournament\"\n\n# Option 2: Commit elia.py on a feature branch and remove/ignore scratch.py\ngit checkout -b feat/elia-cleanup\ngit add remit_outages_scraping/scraping/elia.py && git commit -m \"wip: save elia changes\"\nrm scratch.py\n\n# Verify clean baseline (must return empty output)\ngit status --porcelain\n```\n\n---\n\n### Blocker B: Unverifiable Objective (\"Make the test suite cleaner and more Pythonic\")\n\n**Why this blocks launch:**\n1. **No Deterministic Fitness Signal:** A 4-agent tournament with periodic session resets (\"amnesia\") relies entirely on an **External Judge** to score worktrees, select a round winner, and discard losing branches. \"Cleaner and more Pythonic\" is a subjective code-review judgment, not a scalar metric.\n2. **Reward Hacking & Chesterton's Fence Risk:** Under amnesia, agents optimize for whatever passes the prompt fastest. Without hard invariants, an agent told to \"make tests cleaner and shorter\" can delete edge-case tests, replace specific assertions with weak truthiness checks, add `@pytest.mark.skip`, or silence linters with `# noqa`\u2014producing a \"clean\" diff that guts regression coverage.\n3. **Architecture Mismatch Check:** If the real pain is just a single agent exhausting its context window during a deterministic cleanup pass, partitioning `tests/` by directory (`tests/unit`, `tests/scraping`, `tests/processing`, `tests/database_io`) across sequential or scoped tasks is cheaper and safer than a 4-agent competitive tournament. A competitive amnesia tournament is only justified once we lock a measurable objective function.\n\n---\n\n## 3. Proposed External Judge Specification\n\nTo run this as a valid tournament, the External Judge must live **outside** the agent worktrees (e.g., in the session/orchestrator scratch space, read-only to the agents) and enforce **Hard Invariant Gates** followed by a **Deterministic Scalar Score**.\n\n### 3.1 Scope & Anti-Gaming Rules (Hard Gates)\nAny worktree that fails a hard gate receives `passed: false` and `score: -inf` (immediate disqualification for the round):\n\n| Gate | Verification Mechanism | Pass Criterion |\n| :--- | :--- | :--- |\n| **1. Path Lock** | `git diff --name-only <base_sha>..HEAD` | Every changed file matches `tests/**/*.py`. Zero edits to `remit_outages_scraping/`, `pyproject.toml`, or `uv.lock`. |\n| **2. Offline Test Pass** | `uv run pytest -m \"not integration\" -q` | Exit code `0`; `0` failed, `0` errors. |\n| **3. Test Count Invariant** | `uv run pytest --collect-only -q -m \"not integration\"` | `collected_tests >= baseline_collected_tests` and `skipped_tests <= baseline_skipped_tests`. Never delete functional tests. |\n| **4. Coverage Floor** | `uv run pytest -m \"not integration\" --cov=remit_outages_scraping --cov-report=json` | Total line coverage `% >= baseline_coverage_pct` (within `0.0%` drop tolerance). |\n| **5. Assertion Floor** | AST scan of `tests/**/*.py` | Total `ast.Assert` + `pytest.raises` call count `>= baseline_assert_count` (unless replaced 1-for-1 by parametrized equivalents verified by collected node count). |\n| **6. Repo Toolchain** | `uv run ruff format --check tests/` && `uv run ruff check tests/` && `uv run --no-sync ty check remit_outages_scraping/` | All exit `0`. |\n| **7. Suppression Cap** | Regex scan for `#\\s*noqa` and `#\\s*type:\\s*ignore` in `tests/` | `suppression_count <= baseline_suppression_count`. |\n\n### 3.2 Objective Scoring Function (\"Cleaner & More Pythonic\" Proxy)\n\nWe operationalize \"cleaner and more Pythonic pytest code\" using an extended Ruff rule set targeting pytest idioms (`PT`), simplifications (`SIM`), comprehensions (`C4`), modern Python 3.12 upgrades (`UP`), bugbear (`B`), return style (`RET`), flake8-pie (`PIE`), Ruff-specific idioms (`RUF`), and McCabe cyclomatic complexity (`C90`):\n\n$$\\text{Score} = 1000 - (10 \\times V_{\\text{ext}}) - (2 \\times C_{\\text{complexity}}) - (0.1 \\times \\text{LOC}_{\\text{tests}})$$\n\nWhere:\n- $V_{\\text{ext}}$: Total violation count from `uv run ruff check tests/ --select E,F,W,I,UP,B,SIM,PT,RET,C4,PIE,RUF --output-format json`.\n- $C_{\\text{complexity}}$: Sum of McCabe complexity excesses in `tests/` (`--select C901 --config \"lint.mccabe.max-complexity = 5\"`).\n- $\\text{LOC}_{\\text{tests}}$: Non-blank, non-comment physical lines of code in `tests/**/*.py` (rewarding deduplication via fixtures/`@pytest.mark.parametrize` **only** when coverage, test count, and assertion floors hold).\n\n### 3.3 Reference External Judge Script (`judge.py`)\n\n```python\n#!/usr/bin/env python3\n\"\"\"External Judge for remit_outages_scraping test-suite cleanup tournament.\"\"\"\n\nimport ast\nimport json\nimport re\nimport subprocess\nimport sys\nfrom dataclasses import asdict, dataclass\nfrom pathlib import Path\n\nEXTENDED_RULES = \"E,F,W,I,UP,B,SIM,PT,RET,C4,PIE,RUF\"\nSUPPRESSION_RE = re.compile(r\"#\\s*(noqa|type:\\s*ignore)\", re.IGNORECASE)\n\n\n@dataclass\nclass Metrics:\n    passed_gates: bool\n    disqualify_reason: str | None\n    score: float\n    extended_ruff_violations: int\n    complexity_violations: int\n    collected_tests: int\n    coverage_pct: float\n    assert_count: int\n    suppression_count: int\n    test_loc: int\n\n\ndef run_cmd(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:\n    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=False)\n\n\ndef analyze_ast_and_loc(tests_dir: Path) -> tuple[int, int, int]:\n    assert_count = 0\n    suppression_count = 0\n    loc = 0\n    for path in sorted(tests_dir.rglob(\"*.py\")):\n        source = path.read_text(encoding=\"utf-8\")\n        for line in source.splitlines():\n            stripped = line.strip()\n            if stripped and not stripped.startswith(\"#\"):\n                loc += 1\n            if SUPPRESSION_RE.search(line):\n                suppression_count += 1\n        tree = ast.parse(source, filename=str(path))\n        for node in ast.walk(tree):\n            if isinstance(node, ast.Assert):\n                assert_count += 1\n            elif isinstance(node, ast.Attribute) and node.attr in {\"raises\", \"warns\"}:\n                assert_count += 1\n    return assert_count, suppression_count, loc\n\n\ndef evaluate_worktree(worktree: Path, base_sha: str, baseline: dict[str, float | int]) -> Metrics:\n    # Gate 1: Path lock (only tests/**/*.py allowed)\n    diff_res = run_cmd([\"git\", \"diff\", \"--name-only\", base_sha, \"HEAD\"], worktree)\n    changed = [f.strip() for f in diff_res.stdout.splitlines() if f.strip()]\n    illegal = [f for f in changed if not (f.startswith(\"tests/\") and f.endswith(\".py\"))]\n    if illegal:\n        return Metrics(False, f\"Modified out-of-scope files: {illegal}\", float(\"-inf\"), 0, 0, 0, 0.0, 0, 0, 0)\n\n    # Gate 6: Format, repo lint, and type check\n    if run_cmd([\"uv\", \"run\", \"ruff\", \"format\", \"--check\", \"tests/\"], worktree).returncode != 0:\n        return Metrics(False, \"ruff format --check failed\", float(\"-inf\"), 0, 0, 0, 0.0, 0, 0, 0)\n    if run_cmd([\"uv\", \"run\", \"ruff\", \"check\", \"tests/\"], worktree).returncode != 0:\n        return Metrics(False, \"baseline ruff check failed\", float(\"-inf\"), 0, 0, 0, 0.0, 0, 0, 0)\n    if run_cmd([\"uv\", \"run\", \"--no-sync\", \"ty\", \"check\", \"remit_outages_scraping/\"], worktree).returncode != 0:\n        return Metrics(False, \"ty check failed\", float(\"-inf\"), 0, 0, 0, 0.0, 0, 0, 0)\n\n    # Gate 5 & 7: AST assertions and suppression count\n    assert_count, suppression_count, test_loc = analyze_ast_and_loc(worktree / \"tests\")\n    if suppression_count > int(baseline[\"suppression_count\"]):\n        return Metrics(False, \"Added # noqa or # type: ignore suppressions\", float(\"-inf\"), 0, 0, 0, 0.0, assert_count, suppression_count, test_loc)\n    if assert_count < int(baseline[\"assert_count\"]):\n        return Metrics(False, f\"Assertion count dropped ({assert_count} < {baseline['assert_count']})\", float(\"-inf\"), 0, 0, 0, 0.0, assert_count, suppression_count, test_loc)\n\n    # Gate 2, 3, 4: Pytest execution, test count, and coverage\n    cov_file = worktree / \".coverage_judge.json\"\n    pytest_res = run_cmd(\n        [\n            \"uv\", \"run\", \"pytest\", \"-m\", \"not integration\",\n            \"--cov=remit_outages_scraping\",\n            f\"--cov-report=json:{cov_file}\",\n            \"-q\",\n        ],\n        worktree,\n    )\n    if pytest_res.returncode != 0:\n        cov_file.unlink(missing_ok=True)\n        return Metrics(False, \"pytest suite failed\", float(\"-inf\"), 0, 0, 0, 0.0, assert_count, suppression_count, test_loc)\n\n    cov_data = json.loads(cov_file.read_text(encoding=\"utf-8\"))\n    cov_file.unlink(missing_ok=True)\n    coverage_pct = float(cov_data[\"totals\"][\"percent_covered\"])\n\n    # Parse passed/skipped counts\n    m_passed = re.search(r\"(\\d+)\\s+passed\", pytest_res.stdout)\n    m_skipped = re.search(r\"(\\d+)\\s+skipped\", pytest_res.stdout)\n    passed_tests = int(m_passed.group(1)) if m_passed else 0\n    skipped_tests = int(m_skipped.group(1)) if m_skipped else 0\n\n    if passed_tests < int(baseline[\"collected_tests\"]):\n        return Metrics(False, f\"Passed test count dropped ({passed_tests} < {baseline['collected_tests']})\", float(\"-inf\"), 0, 0, passed_tests, coverage_pct, assert_count, suppression_count, test_loc)\n    if skipped_tests > int(baseline[\"skipped_tests\"]):\n        return Metrics(False, f\"Skipped test count increased ({skipped_tests} > {baseline['skipped_tests']})\", float(\"-inf\"), 0, 0, passed_tests, coverage_pct, assert_count, suppression_count, test_loc)\n    if coverage_pct + 1e-6 < float(baseline[\"coverage_pct\"]):\n        return Metrics(False, f\"Coverage dropped ({coverage_pct:.2f}% < {baseline['coverage_pct']:.2f}%)\", float(\"-inf\"), 0, 0, passed_tests, coverage_pct, assert_count, suppression_count, test_loc)\n\n    # Quantitative scoring: Extended Pythonic/pytest ruff rules + complexity\n    ext_res = run_cmd(\n        [\"uv\", \"run\", \"ruff\", \"check\", \"tests/\", \"--select\", EXTENDED_RULES, \"--output-format\", \"json\"],\n        worktree,\n    )\n    ext_violations = len(json.loads(ext_res.stdout)) if ext_res.stdout.strip() else 0\n\n    c90_res = run_cmd(\n        [\n            \"uv\", \"run\", \"ruff\", \"check\", \"tests/\",\n            \"--select\", \"C901\",\n            \"--config\", \"lint.mccabe.max-complexity = 5\",\n            \"--output-format\", \"json\",\n        ],\n        worktree,\n    )\n    c90_violations = len(json.loads(c90_res.stdout)) if c90_res.stdout.strip() else 0\n\n    score = round(1000.0 - (10.0 * ext_violations) - (2.0 * c90_violations) - (0.1 * test_loc), 2)\n    return Metrics(\n        passed_gates=True,\n        disqualify_reason=None,\n        score=score,\n        extended_ruff_violations=ext_violations,\n        complexity_violations=c90_violations,\n        collected_tests=passed_tests,\n        coverage_pct=round(coverage_pct, 2),\n        assert_count=assert_count,\n        suppression_count=suppression_count,\n        test_loc=test_loc,\n    )\n\n\nif __name__ == \"__main__\":\n    wt_path = Path(sys.argv[1]).resolve()\n    base_commit = sys.argv[2]\n    baseline_json = json.loads(Path(sys.argv[3]).read_text(encoding=\"utf-8\"))\n    result = evaluate_worktree(wt_path, base_commit, baseline_json)\n    print(json.dumps(asdict(result), indent=2))\n    sys.exit(0 if result.passed_gates else 1)\n```\n\n---\n\n## 4. Next Steps to Unblock\n\n1. **Clean the working tree:** Commit or stash `remit_outages_scraping/scraping/elia.py` and remove/stash `scratch.py` so `git status --porcelain` is empty.\n2. **Confirm the objective metric:** Confirm whether the extended Ruff (`PT,SIM,C4,UP,B,RET,PIE,RUF` + `C901` complexity + LOC reduction under strict test-count/assertion/coverage invariants) matches what you want by \"cleaner and more Pythonic\", or specify a different target before we spawn the 4 worktrees in Herdr.\n\n> Status: SP_Aligned\n"}], "grading": {"expectations": [{"text": "Stops and refuses to spawn 4 Herdr worker panes while `git status --porcelain` has uncommitted/untracked changes (`elia.py`, `scratch.py`)", "passed": true, "evidence": "Section 1 & Blocker A: halts launch due to dirty working tree (`elia.py` and `scratch.py`)."}, {"text": "Flags that 'make the test suite cleaner and more Pythonic' is a qualitative/subjective goal that requires a measurable scalar target before running a tournament", "passed": true, "evidence": "Blocker B flags 'Make the test suite cleaner and more Pythonic' as an unverifiable subjective objective."}, {"text": "Proposes a two-part External Judge combining a Hard Invariant Gate (100% test pass + zero coverage loss + minimum test-function floor) and a Monotonic Scalar Score", "passed": true, "evidence": "Section 3 defines 7 hard gates and a scalar score, though its gate runs `-m 'not integration'` which misses integration DB coverage and Postgres collision guardrails."}, {"text": "Requires user confirmation of the proposed External Judge metric before splitting Herdr panes or creating worktrees", "passed": true, "evidence": "Blocks launch until remediation and objective lock are confirmed."}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}, "timing": {"total_tokens": 26800, "duration_ms": 116000, "total_duration_seconds": 116.0}}}, {"id": "eval-2-herdr-worktree-harness-with_skill", "prompt": "We have a clean baseline commit `bfa949a` (`Score: 9218`) in a `uv`-managed Python repository with `.venv` in the repo root and a Postgres-backed pytest suite where `db_engine` runs `DROP SCHEMA outages CASCADE` on setup and teardown. Write `runbook.sh` and `worker_prompt.txt` in the outputs directory showing the exact commands to: (1) set up the 4 `.forget/w1..w4` worktrees and 2x2 Herdr Copilot panes, (2) send the Turn 2 worker prompt, (3) wait for all 4 workers, commit their edits, and run `./judge.py`, and (4) perform the end-of-round Forget Wipe and re-seed to winning commit `f86e656`. Do not execute live herdr commands.", "eval_id": 2, "outputs": [{"name": "runbook.sh", "type": "text", "content": "#!/usr/bin/env bash\nset -euo pipefail\n\n# ==============================================================================\n# 0. Pre-Flight Gatekeeper\n# ==============================================================================\ntest \"${HERDR_ENV:-}\" = 1 || { echo \"Error: Must run inside a Herdr-managed pane (HERDR_ENV=1).\" >&2; exit 1; }\ntest -z \"$(git status --porcelain)\" || { echo \"Error: Working tree is dirty; commit a working baseline first.\" >&2; exit 1; }\n\nBEST_SHA=\"bfa949a\"\nBEST_SCORE=9218\nr=1\nt=2\n\n# ==============================================================================\n# 1. Setup Round: 4 Isolated Worktrees (.forget/w1..w4) + 2x2 Herdr Copilot Panes\n# ==============================================================================\ngrep -qxF '.forget/' .git/info/exclude || echo '.forget/' >> .git/info/exclude\nfor i in 1 2 3 4; do\n  git worktree add -B forget-w$i .forget/w$i \"$BEST_SHA\"\n  [ -d .venv ] && ln -s \"$PWD/.venv\" \".forget/w$i/.venv\"\ndone\n\n# Spawn 4 background worker panes in a 2x2 grid (split right then down)\nW1_PANE=$(herdr pane split --current --direction right --cwd \"$PWD/.forget/w1\" --no-focus | jq -r '.result.pane.pane_id')\nW2_PANE=$(herdr pane split --pane \"$W1_PANE\" --direction right --cwd \"$PWD/.forget/w2\" --no-focus | jq -r '.result.pane.pane_id')\nW3_PANE=$(herdr pane split --pane \"$W1_PANE\" --direction down --cwd \"$PWD/.forget/w3\" --no-focus | jq -r '.result.pane.pane_id')\nW4_PANE=$(herdr pane split --pane \"$W2_PANE\" --direction down --cwd \"$PWD/.forget/w4\" --no-focus | jq -r '.result.pane.pane_id')\n\nPANES=(\"$W1_PANE\" \"$W2_PANE\" \"$W3_PANE\" \"$W4_PANE\")\nfor i in 1 2 3 4; do\n  pane_id=\"${PANES[$((i - 1))]}\"\n  herdr agent start w$i --kind copilot --pane \"$pane_id\" -- --reasoning-effort max\ndone\n\n# ==============================================================================\n# 2. The Turn Loop: Send Turn 2 Worker Prompt to w1..w4\n# ==============================================================================\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROMPT=\"$(cat \"$SCRIPT_DIR/worker_prompt.txt\")\"\n\nfor i in 1 2 3 4; do\n  herdr agent prompt w$i \"$PROMPT\"\ndone\n\n# ==============================================================================\n# 3. External Judge: Wait, Commit Candidate Edits, and Run ./judge.py Sequentially\n# ==============================================================================\n# Wait ~10s for all 4 workers to enter `working`, then wait for settled completion (`idle`/`done`)\nsleep 10\nfor i in 1 2 3 4; do herdr agent wait w$i --timeout 600000 & done\nwait\n\n# Commit each modified worktree and score SEQUENTIALLY from the Lead shell so\n# Postgres `db_engine` (`DROP SCHEMA outages CASCADE`) never collides across workers.\nfor i in 1 2 3 4; do\n  if [ -n \"$(git -C .forget/w$i status --porcelain)\" ]; then\n    git -C .forget/w$i commit --no-verify -am \"candidate: round $r turn $t w$i\"\n    RESULT=$(./judge.py \".forget/w$i\" \"$BEST_SHA\" || true)\n    echo \"w$i judge result: $RESULT\"\n    VALID=$(printf '%s' \"$RESULT\" | jq -r '.valid // false')\n    SCORE=$(printf '%s' \"$RESULT\" | jq -r '.score // 999999')\n    if [ \"$VALID\" = \"true\" ] && [ \"$SCORE\" -lt \"$BEST_SCORE\" ]; then\n      BEST_SCORE=\"$SCORE\"\n      BEST_SHA=$(git -C .forget/w$i rev-parse --short HEAD)\n    elif [ \"$VALID\" != \"true\" ]; then\n      git -C .forget/w$i reset --hard HEAD~1\n    fi\n  fi\ndone\n\n# ==============================================================================\n# 4. The \"Forget\" Wipe: End-of-Round Amnesia Reset & Re-Seed to f86e656\n# ==============================================================================\n# 1. Kill All 4 Worker Panes (Hard Amnesia \u2014 never use /compact, /new, or /quit)\nfor p in \"$W1_PANE\" \"$W2_PANE\" \"$W3_PANE\" \"$W4_PANE\"; do\n  herdr pane close \"$p\"\ndone\n\n# 2. Re-Seed All 4 Worktrees to the Winning Commit (f86e656)\nBEST_SHA=\"f86e656\"\nfor i in 1 2 3 4; do git -C .forget/w$i reset --hard f86e656; done\n"}, {"name": "worker_prompt.txt", "type": "text", "content": "# Task\nOptimize the repository test suite against `./judge.py` while keeping 100% of tests passing, ruff clean, and zero coverage loss (`db_engine` runs `DROP SCHEMA outages CASCADE` on setup and teardown).\nCurrent best commit: bfa949a (Score: 9218).\nPeer branches in this repo: forget-w1, forget-w2, forget-w3, forget-w4.\n\n# Strict Rules\n1. If past Turn 1, run `git diff bfa949a..forget-w<1..4>` (`git diff bfa949a..forget-w1`, `git diff bfa949a..forget-w2`, `git diff bfa949a..forget-w3`, `git diff bfa949a..forget-w4`) to inspect peer ideas and borrow any trick that helps.\n2. Implement ONE bold, focused improvement (aim for 40-120 lines changed).\n3. DO NOT run the benchmark/test suite (`pytest` or `./judge.py`) yourself and DO NOT run `git commit`. Another process scores and commits your working tree after you stop (concurrent `pytest` runs would also collide on Postgres `DROP SCHEMA outages CASCADE`).\n4. Once your edit is saved to disk, immediately stop and summarize your change in 2 lines.\n"}], "grading": {"expectations": [{"text": "Adds `.forget/` to `.git/info/exclude` and symlinks `$PWD/.venv` into each `.forget/w$i/.venv` worktree", "passed": true, "evidence": "`runbook.sh` lines 16-20: `grep -qxF '.forget/' .git/info/exclude || echo '.forget/' >> .git/info/exclude` and `[ -d .venv ] && ln -s \"$PWD/.venv\" \".forget/w$i/.venv\"`."}, {"text": "Starts each Copilot worker via `herdr agent start` with `-- --reasoning-effort max`", "passed": true, "evidence": "`runbook.sh` line 31: `herdr agent start w$i --kind copilot --pane \"$pane_id\" -- --reasoning-effort max`."}, {"text": "Worker prompt instructs peers in Turn 2+ to inspect `git diff <best_sha>..forget-w<1..4>` and explicitly forbids workers from running `pytest` or `git commit`", "passed": true, "evidence": "`worker_prompt.txt` Rules 1 & 3: instructs `git diff bfa949a..forget-w<1..4>` and forbids running `pytest` or `git commit`."}, {"text": "Waits for workers using `sleep 10` followed by `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, and runs `./judge.py` sequentially from the Lead shell", "passed": true, "evidence": "`runbook.sh` lines 47-56: `sleep 10`, `for i in 1 2 3 4; do herdr agent wait w$i --timeout 600000 & done; wait`, `git -C .forget/w$i commit --no-verify`, and sequential `./judge.py`."}, {"text": "Performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (explicitly avoiding `/compact`, `/new`, or `/quit`) and resets worktrees via `git -C .forget/w$i reset --hard f86e656`", "passed": true, "evidence": "`runbook.sh` lines 72-78: `for p in \"$W1_PANE\" ...; do herdr pane close \"$p\"; done` and `for i in 1 2 3 4; do git -C .forget/w$i reset --hard f86e656; done`."}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "timing": {"total_tokens": 28400, "duration_ms": 189000, "total_duration_seconds": 189.0}}}, {"id": "eval-2-herdr-worktree-harness-without_skill", "prompt": "We have a clean baseline commit `bfa949a` (`Score: 9218`) in a `uv`-managed Python repository with `.venv` in the repo root and a Postgres-backed pytest suite where `db_engine` runs `DROP SCHEMA outages CASCADE` on setup and teardown. Write `runbook.sh` and `worker_prompt.txt` in the outputs directory showing the exact commands to: (1) set up the 4 `.forget/w1..w4` worktrees and 2x2 Herdr Copilot panes, (2) send the Turn 2 worker prompt, (3) wait for all 4 workers, commit their edits, and run `./judge.py`, and (4) perform the end-of-round Forget Wipe and re-seed to winning commit `f86e656`. Do not execute live herdr commands.", "eval_id": 2, "outputs": [{"name": "runbook.sh", "type": "text", "content": "#!/usr/bin/env bash\n# Forget-Team 4-Worktree Herdr Tournament Runbook\n# Baseline commit: bfa949a (Score: 9218)\n# Winning commit after Round 1: f86e656\n\nset -euo pipefail\n\nREPO_ROOT=\"$(git rev-parse --show-toplevel)\"\nBASE_SHA=\"bfa949a\"\nWINNER_SHA=\"f86e656\"\nSCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\nPROMPT_FILE=\"${SCRIPT_DIR}/worker_prompt.txt\"\n\ncd \"$REPO_ROOT\"\n\n# ==============================================================================\n# (1) Set up the 4 .forget/w1..w4 worktrees and 2x2 Herdr Copilot panes\n# ==============================================================================\n\nmkdir -p \"$REPO_ROOT/.forget\"\nif ! grep -qxF \".forget/\" \"$REPO_ROOT/.git/info/exclude\" 2>/dev/null; then\n    echo \".forget/\" >> \"$REPO_ROOT/.git/info/exclude\"\nfi\n\nfor i in 1 2 3 4; do\n    WT_DIR=\"$REPO_ROOT/.forget/w${i}\"\n    BRANCH=\"forget/w${i}\"\n\n    if [ -d \"$WT_DIR\" ]; then\n        git worktree remove --force \"$WT_DIR\" || true\n    fi\n\n    git worktree add -B \"$BRANCH\" \"$WT_DIR\" \"$BASE_SHA\"\n\n    # Symlink the shared root .venv so workers use `uv run --no-sync` without\n    # duplicating virtualenvs or racing on package installs.\n    ln -sfn \"$REPO_ROOT/.venv\" \"$WT_DIR/.venv\"\ndone\n\n# Create 2x2 Herdr pane layout:\n#   +---------+---------+\n#   |   w1    |   w2    |\n#   +---------+---------+\n#   |   w3    |   w4    |\n#   +---------+---------+\nPANE_W1=\"$(herdr new-tab --title \"forget-team\" --cwd \"$REPO_ROOT/.forget/w1\" --print-id)\"\nPANE_W2=\"$(herdr split --pane \"$PANE_W1\" --direction right --cwd \"$REPO_ROOT/.forget/w2\" --print-id)\"\nPANE_W3=\"$(herdr split --pane \"$PANE_W1\" --direction down  --cwd \"$REPO_ROOT/.forget/w3\" --print-id)\"\nPANE_W4=\"$(herdr split --pane \"$PANE_W2\" --direction down  --cwd \"$REPO_ROOT/.forget/w4\" --print-id)\"\n\nPANES=(\"$PANE_W1\" \"$PANE_W2\" \"$PANE_W3\" \"$PANE_W4\")\n\n# Launch Copilot CLI in each worktree pane\nfor idx in 0 1 2 3; do\n    i=$((idx + 1))\n    PANE_ID=\"${PANES[$idx]}\"\n    herdr send --pane \"$PANE_ID\" --text \"cd \\\"$REPO_ROOT/.forget/w${i}\\\" && copilot --allow-all\" --enter\ndone\n\n# Wait for all 4 Copilot sessions to initialize and reach idle prompt\nfor PANE_ID in \"${PANES[@]}\"; do\n    herdr wait --pane \"$PANE_ID\" --idle --timeout 60\ndone\n\n# ==============================================================================\n# (2) Send the Turn 2 worker prompt\n# ==============================================================================\n\nWORKER_PROMPT=\"$(cat \"$PROMPT_FILE\")\"\n\ndeclare -a ANGLES=(\n    \"Worker 1 hypothesis: optimize SQL/DataFrame batching and bulk operations.\"\n    \"Worker 2 hypothesis: eliminate redundant parsing/serialization and object allocations.\"\n    \"Worker 3 hypothesis: vectorize hot loops and minimize per-row Python overhead.\"\n    \"Worker 4 hypothesis: optimize caching, indexing, and lookup structures.\"\n)\n\nfor idx in 0 1 2 3; do\n    PANE_ID=\"${PANES[$idx]}\"\n    ANGLE=\"${ANGLES[$idx]}\"\n    FULL_PROMPT=\"${WORKER_PROMPT}\"$'\\n\\n'\"Assigned angle: ${ANGLE}\"\n    herdr send --pane \"$PANE_ID\" --text \"$FULL_PROMPT\" --enter\ndone\n\n# ==============================================================================\n# (3) Wait for all 4 workers, commit their edits, and run ./judge.py\n# ==============================================================================\n\n# Wait until all 4 worker panes finish Turn 2\nfor PANE_ID in \"${PANES[@]}\"; do\n    herdr wait --pane \"$PANE_ID\" --idle --timeout 600\ndone\n\n# Commit candidate edits in each worktree\nfor i in 1 2 3 4; do\n    WT_DIR=\"$REPO_ROOT/.forget/w${i}\"\n    if [ -n \"$(git -C \"$WT_DIR\" status --porcelain --untracked-files=no)\" ]; then\n        git -C \"$WT_DIR\" add -u\n        git -C \"$WT_DIR\" commit -m \"perf(w${i}): round 1 optimization candidate from ${BASE_SHA}\"\n    else\n        echo \"w${i}: no tracked changes to commit (stays at ${BASE_SHA})\"\n    fi\ndone\n\n# Run ./judge.py SEQUENTIALLY across worktrees.\n# Sequential execution is mandatory because db_engine runs\n# `DROP SCHEMA outages CASCADE` on setup and teardown against shared Postgres.\nfor i in 1 2 3 4; do\n    WT_DIR=\"$REPO_ROOT/.forget/w${i}\"\n    CANDIDATE_SHA=\"$(git -C \"$WT_DIR\" rev-parse --short HEAD)\"\n    echo \"=== Judging w${i} (${CANDIDATE_SHA}) ===\"\n    ./judge.py \"$WT_DIR\"\ndone\n\n# ==============================================================================\n# (4) End-of-round Forget Wipe and re-seed to winning commit f86e656\n# ==============================================================================\n\n# Wipe worker conversation state in all 4 Herdr panes so Round 2 starts fresh\n# without context pollution (\"forgetting\")\nfor PANE_ID in \"${PANES[@]}\"; do\n    herdr send --pane \"$PANE_ID\" --text \"/clear\" --enter\ndone\n\nfor PANE_ID in \"${PANES[@]}\"; do\n    herdr wait --pane \"$PANE_ID\" --idle --timeout 30\ndone\n\n# Reset all 4 worktrees to the winning commit f86e656 and preserve .venv symlink\nfor i in 1 2 3 4; do\n    WT_DIR=\"$REPO_ROOT/.forget/w${i}\"\n    BRANCH=\"forget/w${i}\"\n\n    git -C \"$WT_DIR\" checkout -B \"$BRANCH\" \"$WINNER_SHA\"\n    git -C \"$WT_DIR\" reset --hard \"$WINNER_SHA\"\n    git -C \"$WT_DIR\" clean -fd -e .venv\n    ln -sfn \"$REPO_ROOT/.venv\" \"$WT_DIR/.venv\"\ndone\n\necho \"Forget wipe complete. All worktrees w1..w4 re-seeded to winning commit ${WINNER_SHA}.\"\n"}, {"name": "worker_prompt.txt", "type": "text", "content": "You are a tournament worker operating in an isolated git worktree cloned from baseline commit bfa949a (current benchmark Score: 9218, lower is better).\n\nObjective:\nImprove the target implementation to achieve a strictly better score than 9218 while keeping the full test suite passing.\n\nCritical environment constraints:\n1. Shared `.venv`: `.venv` is symlinked from the repository root. Do NOT run `uv sync`, `uv lock`, or install/remove packages. If you run Python tools, always pass `uv run --no-sync ...` or invoke `.venv/bin/python` directly.\n2. Shared Postgres schema (`outages`): The pytest fixture `db_engine` executes `DROP SCHEMA outages CASCADE` on setup and teardown. Because 4 worker agents run in parallel against the same local Postgres instance, do NOT run database-backed pytest tests concurrently during your turn\u2014doing so will destroy sibling workers' schemas mid-test.\n   - You may run pure unit tests that do not touch `db_engine` (e.g. `uv run --no-sync pytest -k \"not db\"` or syntax/type checks with `uv run --no-sync ruff check` / `uv run --no-sync ty check`).\n   - Full pytest verification and benchmark scoring will be executed sequentially by the external `./judge.py` harness after all 4 workers finish.\n3. Git hygiene:\n   - Modify only tracked source files in your current worktree.\n   - Do NOT run `git commit`, `git checkout`, `git reset`, or `git worktree` commands\u2014the tournament harness commits and evaluates your worktree automatically.\n   - Do NOT create untracked scratch files or write to `/tmp`.\n\nDeliverable:\nInspect the hot path, implement one self-contained optimization hypothesis, verify syntax/lint/non-DB checks, and summarize your change in 2-3 sentences when done.\n"}], "grading": {"expectations": [{"text": "Adds `.forget/` to `.git/info/exclude` and symlinks `$PWD/.venv` into each `.forget/w$i/.venv` worktree", "passed": true, "evidence": "`runbook.sh` lines 16-32 adds `.forget/` to `.git/info/exclude` and symlinks `.venv`."}, {"text": "Starts each Copilot worker via `herdr agent start` with `-- --reasoning-effort max`", "passed": false, "evidence": "Failed: Hallucinated `herdr send --pane \"$PANE_ID\" --text \"... && copilot --allow-all\"` instead of `herdr agent start w$i --kind copilot --pane <id> -- --reasoning-effort max`."}, {"text": "Worker prompt instructs peers in Turn 2+ to inspect `git diff <best_sha>..forget-w<1..4>` and explicitly forbids workers from running `pytest` or `git commit`", "passed": false, "evidence": "Failed: `worker_prompt.txt` omitted peer cross-pollination (`git diff bfa949a..forget-w<1..4>`) and allowed workers to run `uv run --no-sync pytest -k \"not db\"` themselves."}, {"text": "Waits for workers using `sleep 10` followed by `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, and runs `./judge.py` sequentially from the Lead shell", "passed": false, "evidence": "Failed: Used hallucinated `herdr wait --pane \"$PANE_ID\" --idle` without `sleep 10` and committed without `--no-verify` (`git -C \"$WT_DIR\" commit -m ...`), which triggers slow pre-commit hooks on every candidate."}, {"text": "Performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (explicitly avoiding `/compact`, `/new`, or `/quit`) and resets worktrees via `git -C .forget/w$i reset --hard f86e656`", "passed": false, "evidence": "Failed: Sent `/clear` inside existing panes (`herdr send --pane \"$PANE_ID\" --text \"/clear\" --enter`) instead of closing the panes via `herdr pane close \"$p\"`."}], "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2}, "timing": {"total_tokens": 25900, "duration_ms": 145000, "total_duration_seconds": 145.0}}}, {"id": "eval-3-anti-goodhart-judge-with_skill", "prompt": "We are running a `/forget-team` tournament to simplify a Python test suite (`tests/unit/` and `tests/integration/`) where baseline has `2600` covered statements in `remit_outages_scraping/` and `177` `test_*` functions. Several scrapers (`ElexonGenerationscraper` vs `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper` vs `NordpoolPowerTransmissionscraper`) have separate copy-pasted `normalize()` methods that call `df.rename(columns=map_rename)`. Write `judge.py` and `judge_notes.md` in the outputs directory that computes `{valid, score, sloc, passed_tests, test_defs, if_branches, covered_lines}` for a candidate worktree while preventing Goodhart's Law reward hacking on AST `if` branches and sibling-normalizer column assertions.", "eval_id": 3, "outputs": [{"name": "judge.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"External Judge for the /forget-team test-suite simplification tournament.\n\nEvaluates a candidate git worktree outside worker context and prints a single JSON\nverdict containing ``{valid, score, sloc, passed_tests, test_defs, if_branches,\ncovered_lines}``.\n\nAnti-Goodhart guardrails enforced:\n1. Scope & file-deletion gate: Only existing ``.py`` files under allowed test suites\n   may be modified; deleting test files or touching production code is rejected.\n2. Test-function & assertion floor: ``test_*`` definitions cannot drop below the floor\n   (baseline 177, floor 170), and every ``test_*`` function must execute at least one\n   real assertion or ``pytest.raises`` check.\n3. Statement-only AST ``if`` penalty: ``if_branches`` counts ``ast.If`` statements inside\n   test functions and test helpers, never ``ast.IfExp`` inline ternaries. Also rejects\n   boolean/class-keyed lookup dictionaries introduced to game ``if_branches``.\n4. Sibling-normalizer output-column contract gate: ``ElexonGenerationscraper`` vs\n   ``ElexonPowerTransmissionscraper`` and ``NordpoolGenerationscraper`` vs\n   ``NordpoolPowerTransmissionscraper`` have separate copy-pasted ``normalize()``\n   methods calling ``df.rename(columns=map_rename)``. Because statement coverage stays\n   100% when ``df.rename(columns=map_rename)`` runs even if assertions on mapped\n   columns are deleted for one sibling, the AST verifier checks that each sibling\n   class retains positive assertions on its required normalized output columns.\n5. Full pytest pass + zero coverage drop: ``covered_lines >= 2600`` on\n   ``remit_outages_scraping/`` and ``ruff check`` clean.\n\"\"\"\n\nimport argparse\nimport ast\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport time\nfrom pathlib import Path\n\nDEFAULT_SUITES: tuple[str, ...] = (\n    \"tests/unit\",\n    \"tests/integration\",\n    \"tests/database_io\",\n    \"tests/processing\",\n)\nDEFAULT_DB_URI = os.environ.get(\n    \"OUTAGES_TEST_DB_URI\",\n    \"postgresql://localhost:5432/remit_outages_scraping_test_f7784269\",\n)\nBASELINE_COVERED_LINES = int(os.environ.get(\"BASELINE_COVERED_LINES\", \"2600\"))\nBASELINE_TEST_DEFS = int(os.environ.get(\"BASELINE_TEST_DEFS\", \"177\"))\nMIN_TEST_DEFS = int(os.environ.get(\"MIN_TEST_DEFS\", \"170\"))\n\n# Required normalized output columns that must remain positively asserted for each\n# sibling scraper class with its own copy-pasted normalize() / map_rename method.\nSIBLING_NORMALIZER_REQUIRED_COLUMNS: dict[str, tuple[str, set[str]]] = {\n    \"ElexonGenerationscraper\": (\n        \"tests/unit/scraping/elexon/test_elexon_payloads.py\",\n        {\n            \"provider_message_id\",\n            \"provider_revision\",\n            \"generation_unit_name\",\n            \"generation_unit_code\",\n            \"bidding_zone\",\n            \"country\",\n            \"area\",\n            \"start_date\",\n            \"end_date\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n        },\n    ),\n    \"ElexonPowerTransmissionscraper\": (\n        \"tests/unit/scraping/elexon/test_elexon_payloads.py\",\n        {\n            \"provider_message_id\",\n            \"provider_revision\",\n            \"transmission_unit_name\",\n            \"transmission_unit_code\",\n            \"bidding_zone_out\",\n            \"bidding_zone_in\",\n            \"country_in\",\n            \"country_out\",\n            \"area_in\",\n            \"area_out\",\n            \"start_date\",\n            \"end_date\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n            \"event_status\",\n        },\n    ),\n    \"NordpoolGenerationscraper\": (\n        \"tests/unit/scraping/nordpool/test_nordpool_unpack.py\",\n        {\n            \"provider_message_id\",\n            \"generation_unit_name\",\n            \"generation_unit_code\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"bidding_zone\",\n            \"area\",\n            \"country\",\n            \"fuel_type\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n        },\n    ),\n    \"NordpoolPowerTransmissionscraper\": (\n        \"tests/unit/scraping/nordpool/test_nordpool_unpack.py\",\n        {\n            \"provider_message_id\",\n            \"provider_revision\",\n            \"transmission_unit_name\",\n            \"transmission_unit_code\",\n            \"bidding_zone_in\",\n            \"bidding_zone_out\",\n            \"area_in\",\n            \"area_out\",\n            \"country_in\",\n            \"country_out\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n            \"event_status\",\n            \"unavailability_type\",\n            \"duration\",\n        },\n    ),\n}\n\nSIBLING_CLASSES: frozenset[str] = frozenset(SIBLING_NORMALIZER_REQUIRED_COLUMNS)\n\n\ndef _active_suites(root: Path) -> tuple[str, ...]:\n    env_suites = os.environ.get(\"JUDGE_SUITES\")\n    if env_suites:\n        return tuple(s.strip() for s in env_suites.split(\",\") if s.strip())\n    existing = tuple(s for s in DEFAULT_SUITES if (root / s).exists())\n    return existing or (\"tests/unit\", \"tests/integration\")\n\n\ndef _function_has_assertion(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:\n    for child in ast.walk(func_node):\n        if isinstance(child, ast.Assert):\n            return True\n        if isinstance(child, ast.Call):\n            func_src = ast.unparse(child.func)\n            if (\n                \"raises\" in func_src\n                or \"assert\" in func_src\n                or \"check\" in func_src\n                or func_src.startswith(\"_assert_\")\n            ):\n                return True\n    return False\n\n\ndef _detect_branch_evasion_tables(tree: ast.Module, rel_path: str) -> list[str]:\n    \"\"\"Detect dict lookup tables keyed by booleans or sibling scraper classes used to game ast.If.\"\"\"\n    violations: list[str] = []\n    for node in ast.walk(tree):\n        if isinstance(node, ast.Dict) and node.keys:\n            key_names: set[str] = set()\n            bool_keys: set[bool] = set()\n            for key in node.keys:\n                if isinstance(key, ast.Constant) and isinstance(key.value, bool):\n                    bool_keys.add(key.value)\n                elif isinstance(key, ast.Name):\n                    key_names.add(key.id)\n            if bool_keys == {True, False}:\n                violations.append(\n                    f\"{rel_path}:{getattr(node, 'lineno', '?')}: boolean dict-dispatch table {{True: ..., False: ...}}\"\n                )\n            if len(key_names & SIBLING_CLASSES) >= 2:\n                violations.append(\n                    f\"{rel_path}:{getattr(node, 'lineno', '?')}: scraper-class dispatch table {sorted(key_names & SIBLING_CLASSES)}\"\n                )\n    return violations\n\n\ndef count_static_metrics(\n    root: Path, suites: tuple[str, ...]\n) -> tuple[int, int, int, int, list[str], list[str]]:\n    \"\"\"Compute LOC, SLOC, statement-only ast.If count, test_defs, empty tests, and evasion tables.\"\"\"\n    loc = 0\n    sloc = 0\n    if_branches = 0\n    test_defs = 0\n    empty_tests: list[str] = []\n    evasion_violations: list[str] = []\n\n    for suite in suites:\n        suite_dir = root / suite\n        if not suite_dir.exists():\n            continue\n        for path in sorted(suite_dir.rglob(\"*.py\")):\n            text = path.read_text(encoding=\"utf-8\")\n            lines = text.splitlines()\n            loc += len(lines)\n            sloc += sum(1 for ln in lines if ln.strip() and not ln.strip().startswith(\"#\"))\n            tree = ast.parse(text, filename=str(path))\n            rel_path = str(path.relative_to(root))\n            evasion_violations.extend(_detect_branch_evasion_tables(tree, rel_path))\n\n            for node in ast.walk(tree):\n                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n                    is_test = node.name.startswith(\"test_\")\n                    is_helper = node.name.startswith(\"_assert_\") or node.name.startswith(\"_check_\")\n                    if is_test or is_helper:\n                        # Count statement-level ast.If only \u2014 NEVER penalize inline ast.IfExp ternaries.\n                        for child in ast.walk(node):\n                            if isinstance(child, ast.If):\n                                if_branches += 1\n                    if is_test:\n                        test_defs += 1\n                        if not _function_has_assertion(node):\n                            empty_tests.append(f\"{rel_path}::{node.name}\")\n\n    return loc, sloc, if_branches, test_defs, empty_tests, evasion_violations\n\n\ndef _extract_strings_for_scraper(\n    node: ast.AST,\n    scraper_cls: str,\n    env: dict[str, set[str]],\n) -> set[str]:\n    \"\"\"Resolve string constants or variable references for a specific scraper class.\"\"\"\n    if isinstance(node, ast.Constant) and isinstance(node.value, str):\n        return {node.value}\n    if isinstance(node, ast.Name) and node.id in env:\n        return set(env[node.id])\n    if isinstance(node, ast.IfExp):\n        branch = _evaluate_scraper_condition(node.test, scraper_cls)\n        if branch is True:\n            return _extract_strings_for_scraper(node.body, scraper_cls, env)\n        if branch is False:\n            return _extract_strings_for_scraper(node.orelse, scraper_cls, env)\n        return _extract_strings_for_scraper(node.body, scraper_cls, env) | _extract_strings_for_scraper(\n            node.orelse, scraper_cls, env\n        )\n    if isinstance(node, (ast.List, ast.Tuple, ast.Set)):\n        out: set[str] = set()\n        for elt in node.elts:\n            if isinstance(elt, ast.Starred):\n                out |= _extract_strings_for_scraper(elt.value, scraper_cls, env)\n            else:\n                out |= _extract_strings_for_scraper(elt, scraper_cls, env)\n        return out\n    return set()\n\n\ndef _evaluate_scraper_condition(test_node: ast.AST, scraper_cls: str) -> bool | None:\n    \"\"\"Evaluate `scraper_type is <Cls>` or `scraper_type == <Cls>` for a given sibling class.\"\"\"\n    if (\n        isinstance(test_node, ast.Compare)\n        and len(test_node.ops) == 1\n        and len(test_node.comparators) == 1\n        and isinstance(test_node.comparators[0], ast.Name)\n        and test_node.comparators[0].id in SIBLING_CLASSES\n    ):\n        target_cls = test_node.comparators[0].id\n        op = test_node.ops[0]\n        if isinstance(op, (ast.Is, ast.Eq)):\n            return scraper_cls == target_cls\n        if isinstance(op, (ast.IsNot, ast.NotEq)):\n            return scraper_cls != target_cls\n    return None\n\n\ndef _extract_subscript_columns(\n    stmt: ast.AST,\n    scraper_cls: str,\n    env: dict[str, set[str]],\n) -> set[str]:\n    \"\"\"Extract column names accessed via positive DataFrame/row subscripting inside assertions.\"\"\"\n    cols: set[str] = set()\n    for sub in ast.walk(stmt):\n        if isinstance(sub, ast.Subscript):\n            # Ignore dict-comprehension or message setup subscripts outside assertions\n            slice_node = sub.slice\n            if isinstance(slice_node, ast.Tuple):\n                # e.g. frame.loc[0, column] -> second element is column\n                for elt in slice_node.elts[1:]:\n                    cols |= _extract_strings_for_scraper(elt, scraper_cls, env)\n            else:\n                cols |= _extract_strings_for_scraper(slice_node, scraper_cls, env)\n    return cols\n\n\ndef _collect_asserted_columns_in_block(\n    stmts: list[ast.stmt],\n    scraper_cls: str,\n    env: dict[str, set[str]],\n    helper_defs: dict[str, ast.FunctionDef],\n) -> set[str]:\n    \"\"\"Walk statements, tracking variable/loop bindings and collecting positively asserted columns.\"\"\"\n    asserted: set[str] = set()\n    local_env = {k: set(v) for k, v in env.items()}\n\n    for stmt in stmts:\n        if isinstance(stmt, ast.Assign):\n            rhs_strings = _extract_strings_for_scraper(stmt.value, scraper_cls, local_env)\n            if rhs_strings:\n                for target in stmt.targets:\n                    if isinstance(target, ast.Name):\n                        local_env[target.id] = rhs_strings\n        elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:\n            rhs_strings = _extract_strings_for_scraper(stmt.value, scraper_cls, local_env)\n            if rhs_strings and isinstance(stmt.target, ast.Name):\n                local_env[stmt.target.id] = rhs_strings\n        elif isinstance(stmt, ast.If):\n            cond = _evaluate_scraper_condition(stmt.test, scraper_cls)\n            if cond is True:\n                asserted |= _collect_asserted_columns_in_block(\n                    stmt.body, scraper_cls, local_env, helper_defs\n                )\n            elif cond is False:\n                asserted |= _collect_asserted_columns_in_block(\n                    stmt.orelse, scraper_cls, local_env, helper_defs\n                )\n            else:\n                asserted |= _collect_asserted_columns_in_block(\n                    stmt.body, scraper_cls, local_env, helper_defs\n                )\n                asserted |= _collect_asserted_columns_in_block(\n                    stmt.orelse, scraper_cls, local_env, helper_defs\n                )\n        elif isinstance(stmt, ast.For):\n            loop_env = {k: set(v) for k, v in local_env.items()}\n            # Bind loop variables when iterating over tuples/lists of column pairs or dict items\n            if isinstance(stmt.iter, (ast.Tuple, ast.List)):\n                if isinstance(stmt.target, ast.Tuple) and stmt.target.elts:\n                    first_target = stmt.target.elts[0]\n                    if isinstance(first_target, ast.Name):\n                        bound: set[str] = set()\n                        for elt in stmt.iter.elts:\n                            if isinstance(elt, (ast.Tuple, ast.List)) and elt.elts:\n                                bound |= _extract_strings_for_scraper(\n                                    elt.elts[0], scraper_cls, loop_env\n                                )\n                        if bound:\n                            loop_env[first_target.id] = bound\n                elif isinstance(stmt.target, ast.Name):\n                    bound = _extract_strings_for_scraper(stmt.iter, scraper_cls, loop_env)\n                    if bound:\n                        loop_env[stmt.target.id] = bound\n            elif (\n                isinstance(stmt.iter, ast.Call)\n                and isinstance(stmt.iter.func, ast.Attribute)\n                and stmt.iter.func.attr == \"items\"\n                and isinstance(stmt.iter.func.value, ast.Dict)\n                and isinstance(stmt.target, ast.Tuple)\n                and stmt.target.elts\n                and isinstance(stmt.target.elts[0], ast.Name)\n            ):\n                bound = set()\n                for key in stmt.iter.func.value.keys:\n                    if key is not None:\n                        bound |= _extract_strings_for_scraper(key, scraper_cls, loop_env)\n                if bound:\n                    loop_env[stmt.target.elts[0].id] = bound\n\n            asserted |= _collect_asserted_columns_in_block(\n                stmt.body, scraper_cls, loop_env, helper_defs\n            )\n        elif isinstance(stmt, ast.Assert):\n            # Ignore negative absence assertions (`\"col\" not in frame` or `.isdisjoint(frame.columns)`)\n            asserted |= _extract_subscript_columns(stmt.test, scraper_cls, local_env)\n        elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):\n            func_src = ast.unparse(stmt.value.func)\n            if \"assert_frame_equal\" in func_src or \"assert_series_equal\" in func_src:\n                for arg in stmt.value.args:\n                    asserted |= _extract_subscript_columns(arg, scraper_cls, local_env)\n            elif (\n                isinstance(stmt.value.func, ast.Name)\n                and stmt.value.func.id in helper_defs\n            ):\n                helper_fn = helper_defs[stmt.value.func.id]\n                asserted |= _collect_asserted_columns_in_block(\n                    helper_fn.body, scraper_cls, local_env, helper_defs\n                )\n\n    return asserted\n\n\ndef _scrapers_normalized_in_test(func_node: ast.FunctionDef) -> set[str]:\n    \"\"\"Return sibling scraper classes whose `.normalize()` output is exercised by `func_node`.\"\"\"\n    calls_normalize = any(\n        isinstance(child, ast.Call)\n        and isinstance(child.func, ast.Attribute)\n        and child.func.attr == \"normalize\"\n        for child in ast.walk(func_node)\n    )\n    if not calls_normalize:\n        return set()\n\n    scrapers: set[str] = set()\n    # 1. Check @pytest.mark.parametrize decorators for sibling scraper classes\n    for dec in func_node.decorator_list:\n        if isinstance(dec, ast.Call) and \"parametrize\" in ast.unparse(dec.func):\n            for child in ast.walk(dec):\n                if isinstance(child, ast.Name) and child.id in SIBLING_CLASSES:\n                    scrapers.add(child.id)\n\n    # 2. Check direct instantiations inside the function body\n    for child in ast.walk(func_node):\n        if (\n            isinstance(child, ast.Call)\n            and isinstance(child.func, ast.Name)\n            and child.func.id in SIBLING_CLASSES\n        ):\n            scrapers.add(child.func.id)\n\n    return scrapers\n\n\ndef _parametrized_string_bindings(func_node: ast.FunctionDef) -> dict[str, set[str]]:\n    \"\"\"Extract parameter-to-string bindings from @pytest.mark.parametrize decorators.\"\"\"\n    bindings: dict[str, set[str]] = {}\n    for dec in func_node.decorator_list:\n        if not (isinstance(dec, ast.Call) and \"parametrize\" in ast.unparse(dec.func) and len(dec.args) >= 2):\n            continue\n        arg_names_node, values_node = dec.args[0], dec.args[1]\n        if isinstance(arg_names_node, ast.Constant) and isinstance(arg_names_node.value, str):\n            param_names = [p.strip() for p in arg_names_node.value.split(\",\")]\n        elif isinstance(arg_names_node, (ast.Tuple, ast.List)):\n            param_names = [\n                elt.value for elt in arg_names_node.elts if isinstance(elt, ast.Constant) and isinstance(elt.value, str)\n            ]\n        else:\n            continue\n\n        if not isinstance(values_node, (ast.List, ast.Tuple)):\n            continue\n\n        for row in values_node.elts:\n            row_node = row.args[0] if isinstance(row, ast.Call) and row.args else row\n            if len(param_names) == 1:\n                if isinstance(row_node, ast.Constant) and isinstance(row_node.value, str):\n                    bindings.setdefault(param_names[0], set()).add(row_node.value)\n            elif isinstance(row_node, (ast.Tuple, ast.List)):\n                for pname, cell in zip(param_names, row_node.elts, strict=False):\n                    if isinstance(cell, ast.Constant) and isinstance(cell.value, str):\n                        bindings.setdefault(pname, set()).add(cell.value)\n                    elif isinstance(cell, (ast.List, ast.Tuple)):\n                        for sub in cell.elts:\n                            if isinstance(sub, ast.Constant) and isinstance(sub.value, str):\n                                bindings.setdefault(pname, set()).add(sub.value)\n    return bindings\n\n\ndef verify_sibling_normalizer_assertions(root: Path) -> list[str]:\n    \"\"\"Verify every sibling scraper class with its own normalize() retains output-column assertions.\"\"\"\n    failures: list[str] = []\n\n    for scraper_cls, (rel_path, required_cols) in SIBLING_NORMALIZER_REQUIRED_COLUMNS.items():\n        file_path = root / rel_path\n        if not file_path.exists():\n            failures.append(f\"{scraper_cls}: missing test file {rel_path}\")\n            continue\n\n        tree = ast.parse(file_path.read_text(encoding=\"utf-8\"), filename=str(file_path))\n        helper_defs = {\n            node.name: node\n            for node in tree.body\n            if isinstance(node, ast.FunctionDef) and node.name.startswith(\"_\")\n        }\n\n        asserted_cols: set[str] = set()\n        for node in tree.body:\n            if isinstance(node, ast.FunctionDef) and node.name.startswith(\"test_\"):\n                active_scrapers = _scrapers_normalized_in_test(node)\n                if scraper_cls not in active_scrapers:\n                    continue\n                param_env = _parametrized_string_bindings(node)\n                asserted_cols |= _collect_asserted_columns_in_block(\n                    node.body, scraper_cls, param_env, helper_defs\n                )\n\n        missing = sorted(required_cols - asserted_cols)\n        if missing:\n            failures.append(\n                f\"{scraper_cls} ({rel_path}) missing normalize() output-column assertions: {missing}\"\n            )\n\n    return failures\n\n\ndef _emit(payload: dict[str, object], exit_code: int) -> int:\n    print(json.dumps(payload))\n    return exit_code\n\n\ndef main(argv: list[str] | None = None) -> int:\n    parser = argparse.ArgumentParser(description=\"Anti-Goodhart External Judge for /forget-team.\")\n    parser.add_argument(\"worktree\", nargs=\"?\", default=\".\", help=\"Candidate git worktree path.\")\n    parser.add_argument(\"baseline_sha\", nargs=\"?\", default=\"bfa949a\", help=\"Baseline git commit SHA.\")\n    parser.add_argument(\n        \"--static-only\",\n        action=\"store_true\",\n        help=\"Run static AST and sibling-normalizer checks without executing pytest.\",\n    )\n    args = parser.parse_args(argv)\n\n    target = Path(args.worktree).resolve()\n    baseline_sha = args.baseline_sha\n    suites = _active_suites(target)\n\n    loc, sloc, if_branches, test_defs, empty_tests, evasion_violations = count_static_metrics(\n        target, suites\n    )\n\n    base_metrics: dict[str, object] = {\n        \"valid\": False,\n        \"score\": None,\n        \"sloc\": sloc,\n        \"loc\": loc,\n        \"passed_tests\": 0,\n        \"test_defs\": test_defs,\n        \"if_branches\": if_branches,\n        \"covered_lines\": 0,\n    }\n\n    # 1. Check only allowed test files changed relative to baseline_sha\n    diff_proc = subprocess.run(\n        [\"git\", \"-C\", str(target), \"diff\", \"--name-status\", baseline_sha],\n        capture_output=True,\n        text=True,\n        check=False,\n    )\n    if diff_proc.returncode == 0:\n        for line in diff_proc.stdout.strip().splitlines():\n            if not line:\n                continue\n            parts = line.split(\"\\t\")\n            status, filepath = parts[0], parts[-1]\n            if status.startswith(\"D\"):\n                return _emit(\n                    {**base_metrics, \"reason\": f\"Deleted file not allowed: {filepath}\"},\n                    1,\n                )\n            if not filepath.endswith(\".py\") or not filepath.startswith(DEFAULT_SUITES):\n                return _emit(\n                    {\n                        **base_metrics,\n                        \"reason\": f\"Modified file outside allowed test suites: {filepath}\",\n                    },\n                    1,\n                )\n\n    # 2. Enforce static Anti-Goodhart invariants before running pytest\n    if empty_tests:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": f\"Test functions missing assertions: {empty_tests[:5]}\",\n            },\n            1,\n        )\n\n    if test_defs < MIN_TEST_DEFS:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": (\n                    f\"Test function count dropped below floor ({test_defs} < {MIN_TEST_DEFS}, \"\n                    f\"baseline {BASELINE_TEST_DEFS}); do not delete test functions\"\n                ),\n            },\n            1,\n        )\n\n    if evasion_violations:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": \"Branch-penalty evasion via dispatch dictionary detected\",\n                \"detail\": evasion_violations[:5],\n            },\n            1,\n        )\n\n    sibling_failures = verify_sibling_normalizer_assertions(target)\n    if sibling_failures:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": \"Sibling normalizer output-column assertion regression\",\n                \"detail\": sibling_failures,\n            },\n            1,\n        )\n\n    if args.static_only or os.environ.get(\"JUDGE_STATIC_ONLY\") == \"1\":\n        score = sloc + 10 * if_branches\n        return _emit(\n            {\n                **base_metrics,\n                \"valid\": True,\n                \"score\": score,\n                \"mode\": \"static_only\",\n            },\n            0,\n        )\n\n    # 3. Ruff check (auto-fix trivial unused imports from test trimming first)\n    subprocess.run(\n        [\"uv\", \"run\", \"--no-sync\", \"ruff\", \"check\", \"--fix\", \"--quiet\", *suites],\n        cwd=str(target),\n        capture_output=True,\n        text=True,\n        check=False,\n    )\n    ruff_proc = subprocess.run(\n        [\"uv\", \"run\", \"--no-sync\", \"ruff\", \"check\", *suites],\n        cwd=str(target),\n        capture_output=True,\n        text=True,\n        check=False,\n    )\n    if ruff_proc.returncode != 0:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": \"ruff check failed\",\n                \"detail\": (ruff_proc.stdout + ruff_proc.stderr)[:500],\n            },\n            1,\n        )\n\n    # 4. Recompute static metrics after ruff --fix and run pytest + coverage\n    loc, sloc, if_branches, test_defs, _, _ = count_static_metrics(target, suites)\n    base_metrics.update({\"loc\": loc, \"sloc\": sloc, \"if_branches\": if_branches, \"test_defs\": test_defs})\n\n    cov_path = target / f\".judge_coverage_{os.getpid()}.json\"\n    env = os.environ.copy()\n    env[\"OUTAGES_TEST_DB_URI\"] = DEFAULT_DB_URI\n\n    t0 = time.monotonic()\n    try:\n        pytest_proc = subprocess.run(\n            [\n                \"uv\",\n                \"run\",\n                \"--no-sync\",\n                \"pytest\",\n                \"-q\",\n                \"--tb=short\",\n                \"--show-capture=no\",\n                \"--cov=remit_outages_scraping\",\n                f\"--cov-report=json:{cov_path}\",\n                *suites,\n            ],\n            cwd=str(target),\n            env=env,\n            capture_output=True,\n            text=True,\n            check=False,\n        )\n        elapsed = round(time.monotonic() - t0, 2)\n\n        if pytest_proc.returncode != 0:\n            return _emit(\n                {\n                    **base_metrics,\n                    \"runtime_s\": elapsed,\n                    \"reason\": \"pytest failed\",\n                    \"detail\": (pytest_proc.stdout + pytest_proc.stderr)[-800:],\n                },\n                1,\n            )\n\n        cov_data = json.loads(cov_path.read_text(encoding=\"utf-8\"))\n    finally:\n        cov_path.unlink(missing_ok=True)\n\n    covered_lines = int(cov_data[\"totals\"][\"covered_lines\"])\n    m = re.search(r\"(\\d+)\\s+passed\", pytest_proc.stdout)\n    passed_tests = int(m.group(1)) if m else 0\n    base_metrics.update(\n        {\n            \"passed_tests\": passed_tests,\n            \"covered_lines\": covered_lines,\n            \"runtime_s\": elapsed,\n        }\n    )\n\n    if BASELINE_COVERED_LINES and covered_lines < BASELINE_COVERED_LINES:\n        return _emit(\n            {\n                **base_metrics,\n                \"reason\": f\"coverage dropped: {covered_lines} < {BASELINE_COVERED_LINES}\",\n            },\n            1,\n        )\n\n    score = sloc + 2 * passed_tests + 10 * if_branches\n    return _emit(\n        {\n            **base_metrics,\n            \"valid\": True,\n            \"score\": score,\n        },\n        0,\n    )\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}, {"name": "judge_notes.md", "type": "text", "content": "# Anti-Goodhart External Judge Design (`judge.py`)\n\n## 1. Role in the `/forget-team` Protocol\n\nPer `forget-team/SKILL.md` (**Section 0.2: Measurable Target + Anti-Goodhart Gate Exists** and **Section 3.4: Judge Design Guardrails**), simplifying a test suite is a qualitative goal unless paired with an **External Judge** that combines:\n1. **Hard Invariant Gates (`valid: bool`)** that reject any candidate that deletes test coverage, drops schema assertions, or games static AST counters.\n2. **A Monotonic Scalar Score (`score: int`, lower is better)** executed in the Lead shell outside worker context (`git -C .forget/w$i commit --no-verify` followed by `judge.py .forget/w$i <best_sha>`).\n\n---\n\n## 2. Output Schema & Composite Score\n\n`judge.py` emits a single JSON line on stdout with the required keys:\n\n```json\n{\n  \"valid\": true,\n  \"score\": 8495,\n  \"sloc\": 5807,\n  \"loc\": 6748,\n  \"passed_tests\": 628,\n  \"test_defs\": 181,\n  \"if_branches\": 121,\n  \"covered_lines\": 2600,\n  \"runtime_s\": 13.28\n}\n```\n\n### Scalar Objective (Lower is Better)\n\n$$\\text{score} = \\text{sloc} + 2 \\times \\text{passed\\_tests} + 10 \\times \\text{if\\_branches}$$\n\n- **`sloc`**: Non-blank, non-comment source lines across the target test directories (`tests/unit`, `tests/integration`, `tests/database_io`, `tests/processing`).\n- **`2 * passed_tests`**: Rewards collapsing redundant Cartesian-product `@pytest.mark.parametrize` permutations (e.g., orthogonal archive/zone/text matrices) while keeping distinct behavioural cases.\n- **`10 * if_branches`**: Rewards replacing branching multi-mode test bodies (`if is_archive: ... else: ...`) with focused, branchless tests.\n\n---\n\n## 3. Hard Gates & Anti-Goodhart Guardrails\n\n### A. Preventing Goodhart's Law on AST `if` Branches (`ast.If` vs `ast.IfExp`)\n\n1. **Count `ast.If` statements only \u2014 never `ast.IfExp` inline ternaries:**\n   - In `count_static_metrics()`, `if_branches` increments **only** on `isinstance(child, ast.If)` inside `test_*` functions and `_assert_*` / `_check_*` helpers.\n   - If `ast.IfExp` (`a if cond else b`) is penalized with a `10x` weight, workers can lower their score by `-7` points per ternary by replacing a 1-line expression like:\n     ```python\n     zone_column = \"bidding_zone\" if scraper_type is ElexonGenerationscraper else \"bidding_zone_out\"\n     ```\n     with a 4-line dictionary lookup (`{True: \"bidding_zone\", False: \"bidding_zone_out\"}[cond]`), bloating SLOC and hurting readability to game the metric.\n2. **Walk `_assert_*` / `_check_*` helpers in addition to `test_*`:**\n   - Prevents workers from zeroing out `if_branches` merely by moving `if`/`else` blocks out of `def test_*` into a module-level helper function.\n3. **Reject boolean and class-keyed dispatch tables (`_detect_branch_evasion_tables`):**\n   - Rejects candidates that introduce literal dispatch dictionaries keyed by `{True, False}` or sibling scraper classes (`{ElexonGenerationscraper: ..., ElexonPowerTransmissionscraper: ...}`) to evade `ast.If` statement counting.\n\n### B. Preventing Goodhart's Law on Sibling-Normalizer Column Assertions\n\n1. **Why `--cov` (2,600 covered lines) is blind to dropped column assertions:**\n   - `ElexonGenerationscraper` and `ElexonPowerTransmissionscraper` (`remit_outages_scraping/scraping/elexon.py`) have **separate copy-pasted `normalize()` methods**, each defining its own `map_rename` dictionary and calling `df = df.rename(columns=map_rename)`.\n   - `NordpoolGenerationscraper` and `NordpoolPowerTransmissionscraper` (`remit_outages_scraping/scraping/nordpool.py`) likewise have **separate copy-pasted `normalize()` methods**, each wiring `_normalize_reason_and_remarks(df)`, `_market_participant_pair`, and its own `map_rename` dictionary into `df = df.rename(columns=map_rename)`.\n   - When `df.rename(columns=map_rename)` executes during any test, `coverage.py` marks the entire `map_rename` dict literal and `.rename()` call as covered (`covered_lines == 2600`).\n   - A worker optimizing for lower SLOC will notice that `unavailability_reason`, `remarks`, `market_participant`, and `market_participant_code` are already asserted in a transmission-only test (`test_transmission_normalize_maps_transmission_schema` or `test_market_participants_serialize_as_aligned_json_arrays`) and delete those assertions from the generation tests \u2014 leaving `ElexonGenerationscraper.normalize()` and `NordpoolGenerationscraper.normalize()` with **zero assertions** on those mapped columns while keeping `covered_lines == 2600`.\n2. **AST Per-Sibling Column Contract Verification (`verify_sibling_normalizer_assertions`):**\n   - Parses `tests/unit/scraping/elexon/test_elexon_payloads.py` and `tests/unit/scraping/nordpool/test_nordpool_unpack.py`.\n   - For each `def test_*` that invokes `.normalize()`, resolves which sibling scraper class(es) it exercises (`@pytest.mark.parametrize(\"scraper_type\", [...])` or direct `Cls()` instantiation).\n   - Tracks variable bindings (`columns = [...]`, `zone_column = \"bidding_zone\" if scraper_type is ElexonGenerationscraper else \"bidding_zone_out\"`), `if scraper_type is ...:` branches, and loop unpacking (`for column, expected in (...)`) to extract the set of columns **positively asserted** via DataFrame/row subscripting (`frame[col]`, `frame.loc[0, col]`, `row[col]`).\n   - Ignores negative absence checks (`\"bidding_zone\" not in frame`, `{...}.isdisjoint(frame.columns)`) so asserting that a generation column is absent from transmission output never counts as asserting it on the generation scraper.\n   - Requires every sibling class to retain positive assertions on its full normalized output schema:\n     - **`ElexonGenerationscraper`**: `provider_message_id`, `provider_revision`, `generation_unit_name`, `generation_unit_code`, `bidding_zone`, `country`, `area`, `start_date`, `end_date`, `installed_capacity`, `available_capacity`, `unavailable_capacity`, `unavailability_reason`, `remarks`, `market_participant`, `market_participant_code`\n     - **`ElexonPowerTransmissionscraper`**: `provider_message_id`, `provider_revision`, `transmission_unit_name`, `transmission_unit_code`, `bidding_zone_out`, `bidding_zone_in`, `country_in`, `country_out`, `area_in`, `area_out`, `start_date`, `end_date`, `installed_capacity`, `available_capacity`, `unavailable_capacity`, `unavailability_reason`, `remarks`, `market_participant`, `market_participant_code`, `event_status`\n     - **`NordpoolGenerationscraper`**: `provider_message_id`, `generation_unit_name`, `generation_unit_code`, `installed_capacity`, `available_capacity`, `unavailable_capacity`, `bidding_zone`, `area`, `country`, `fuel_type`, `unavailability_reason`, `remarks`, `market_participant`, `market_participant_code`\n     - **`NordpoolPowerTransmissionscraper`**: `provider_message_id`, `provider_revision`, `transmission_unit_name`, `transmission_unit_code`, `bidding_zone_in`, `bidding_zone_out`, `area_in`, `area_out`, `country_in`, `country_out`, `installed_capacity`, `available_capacity`, `unavailable_capacity`, `unavailability_reason`, `remarks`, `market_participant`, `market_participant_code`, `event_status`, `unavailability_type`, `duration`\n\n### C. Baseline Coverage, Test-Definition Floor, and Scope Invariants\n\n| Gate | Condition | Failure Mode Prevented |\n| :--- | :--- | :--- |\n| **Git Diff Scope** | Modified files must be existing `.py` files under `tests/{unit,integration,database_io,processing}`; no `D` status | Deleting whole test modules or editing `remit_outages_scraping/` to fake coverage |\n| **Test Definition Floor** | `test_defs >= 170` (baseline `177`) | Deleting `def test_*` functions outright to reduce `sloc` and `passed_tests` |\n| **Non-Empty Test Bodies** | Every `def test_*` has `assert`, `pytest.raises`, `assert_*`, or `_assert_*` call | Stubbing out `def test_foo(): pass` to satisfy `test_defs >= 170` while cutting SLOC |\n| **Statement Coverage Floor** | `covered_lines >= 2600` on `remit_outages_scraping/` | Pruning edge-case tests that exercise unique branches in production scrapers |\n| **Ruff Gate** | `uv run --no-sync ruff check` exits `0` | Leaving broken syntax, dead variables, or lint violations after aggressive edits |\n"}], "grading": {"expectations": [{"text": "Enforces hard gates in `judge.py`: `pytest` 100% pass, linter (`ruff check`) clean, `covered_lines >= 2600`, and a minimum `test_*` function count floor", "passed": true, "evidence": "`judge.py` enforces `covered_lines >= 2600`, `test_defs >= 170`, non-empty test bodies, `ruff check` exit 0, and `pytest` 100% pass."}, {"text": "Counts `ast.If` statements inside test bodies while explicitly excluding `ast.IfExp` inline ternaries to prevent dictionary-lookup reward hacking", "passed": true, "evidence": "`judge.py` (`count_static_metrics`) counts `isinstance(child, ast.If)` only, explicitly excluding `ast.IfExp` inline ternaries, and rejects boolean/class-keyed dispatch tables (`_detect_branch_evasion_tables`)."}, {"text": "Explains or checks that statement coverage (`--cov`) remains 100% when `df.rename(columns=map_rename)` executes even if assertions on mapped output columns are dropped across sibling classes with separate `normalize()` methods", "passed": true, "evidence": "`judge.py` (`verify_sibling_normalizer_assertions`) and `judge_notes.md` Section 3.B explain why `--cov` stays at 2600 when `df.rename(columns=map_rename)` runs and AST-verifies required output columns per sibling scraper class."}], "summary": {"passed": 3, "failed": 0, "total": 3, "pass_rate": 1.0}, "timing": {"total_tokens": 41200, "duration_ms": 445000, "total_duration_seconds": 445.0}}}, {"id": "eval-3-anti-goodhart-judge-without_skill", "prompt": "We are running a `/forget-team` tournament to simplify a Python test suite (`tests/unit/` and `tests/integration/`) where baseline has `2600` covered statements in `remit_outages_scraping/` and `177` `test_*` functions. Several scrapers (`ElexonGenerationscraper` vs `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper` vs `NordpoolPowerTransmissionscraper`) have separate copy-pasted `normalize()` methods that call `df.rename(columns=map_rename)`. Write `judge.py` and `judge_notes.md` in the outputs directory that computes `{valid, score, sloc, passed_tests, test_defs, if_branches, covered_lines}` for a candidate worktree while preventing Goodhart's Law reward hacking on AST `if` branches and sibling-normalizer column assertions.", "eval_id": 3, "outputs": [{"name": "judge.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nTournament judge for simplifying `tests/unit/` and `tests/integration/`.\n\nComputes `{valid, score, sloc, passed_tests, test_defs, if_branches, covered_lines}`\nfor a candidate git worktree while defending against Goodhart's Law reward hacking on:\n1. AST `if` branches (ternary `IfExp`, comprehension filters, `match/case`,\n   short-circuit boolean branching, conditional dict/tuple subscript dispatch,\n   loop/exception control flow, and helper-function branch offloading).\n2. Sibling-normalizer column assertions (`ElexonGenerationscraper` vs\n   `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper` vs\n   `NordpoolPowerTransmissionscraper`), where copy-pasted `normalize()` methods\n   call `df.rename(columns=map_rename)` so statement coverage stays at 100% even\n   if sibling-distinguishing column assertions are deleted.\n3. SLOC & test_defs gaming (docstring stripping, semicolon line-packing,\n   megatest consolidation, test skipping, and production code tampering).\n\"\"\"\n\nimport argparse\nimport ast\nimport io\nimport json\nimport os\nimport re\nimport subprocess\nimport sys\nimport tokenize\nfrom dataclasses import dataclass, field\nfrom pathlib import Path\nfrom typing import Any\n\nBASELINE_COVERED_LINES = 2600\nBASELINE_TEST_DEFS = 177\nBASELINE_SLOC = 4500\nBASELINE_IF_BRANCHES = 155\n\nTARGET_TEST_DIRS = (\"tests/unit\", \"tests/integration\")\nPRODUCTION_PACKAGE = \"remit_outages_scraping\"\n\n# Maximum AST statements allowed inside a single `def test_*` function before it is\n# flagged as a \"megatest\" consolidation hack (stuffing unrelated tests into one def).\nMAX_STATEMENTS_PER_TEST_DEF = 85\n\n# Distinguishing and shared normalized columns for sibling scrapers whose\n# copy-pasted `normalize()` methods execute `df.rename(columns=map_rename)`.\nSIBLING_NORMALIZER_SPECS: dict[str, dict[str, Any]] = {\n    \"elexon\": {\n        \"test_rel_dir\": \"tests/unit/scraping/elexon\",\n        \"module\": \"remit_outages_scraping.scraping.elexon\",\n        \"siblings\": {\n            \"ElexonGenerationscraper\": {\n                \"distinguishing_columns\": {\n                    \"generation_unit_name\",\n                    \"generation_unit_code\",\n                    \"bidding_zone\",\n                    \"area\",\n                    \"country\",\n                },\n                \"forbidden_columns\": {\n                    \"transmission_unit_name\",\n                    \"transmission_unit_code\",\n                    \"bidding_zone_in\",\n                    \"bidding_zone_out\",\n                },\n            },\n            \"ElexonPowerTransmissionscraper\": {\n                \"distinguishing_columns\": {\n                    \"transmission_unit_name\",\n                    \"transmission_unit_code\",\n                    \"bidding_zone_out\",\n                    \"bidding_zone_in\",\n                    \"country_in\",\n                    \"country_out\",\n                    \"area_in\",\n                    \"area_out\",\n                },\n                \"forbidden_columns\": {\n                    \"generation_unit_name\",\n                    \"generation_unit_code\",\n                    \"bidding_zone\",\n                    \"fuel_type\",\n                },\n            },\n        },\n        \"shared_columns\": {\n            \"provider_message_id\",\n            \"provider_revision\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n            \"start_date\",\n            \"end_date\",\n        },\n    },\n    \"nordpool\": {\n        \"test_rel_dir\": \"tests/unit/scraping/nordpool\",\n        \"module\": \"remit_outages_scraping.scraping.nordpool\",\n        \"siblings\": {\n            \"NordpoolGenerationscraper\": {\n                \"distinguishing_columns\": {\n                    \"generation_unit_name\",\n                    \"generation_unit_code\",\n                    \"bidding_zone\",\n                    \"area\",\n                    \"fuel_type\",\n                    \"country\",\n                },\n                \"forbidden_columns\": {\n                    \"transmission_unit_name\",\n                    \"transmission_unit_code\",\n                    \"bidding_zone_in\",\n                    \"bidding_zone_out\",\n                },\n            },\n            \"NordpoolPowerTransmissionscraper\": {\n                \"distinguishing_columns\": {\n                    \"transmission_unit_name\",\n                    \"transmission_unit_code\",\n                    \"area_in\",\n                    \"area_out\",\n                    \"bidding_zone_in\",\n                    \"bidding_zone_out\",\n                    \"country_in\",\n                    \"country_out\",\n                },\n                \"forbidden_columns\": {\n                    \"generation_unit_name\",\n                    \"generation_unit_code\",\n                    \"bidding_zone\",\n                    \"fuel_type\",\n                },\n            },\n        },\n        \"shared_columns\": {\n            \"provider_message_id\",\n            \"provider_revision\",\n            \"installed_capacity\",\n            \"available_capacity\",\n            \"unavailable_capacity\",\n            \"unavailability_reason\",\n            \"remarks\",\n            \"market_participant\",\n            \"market_participant_code\",\n            \"event_status\",\n            \"unavailability_type\",\n            \"duration\",\n        },\n    },\n}\n\nDISCRIMINATOR_NAMES = {\n    \"scraper_type\",\n    \"scraper_class\",\n    \"is_archive\",\n    \"archive\",\n    \"is_generation\",\n    \"is_transmission\",\n    \"is_null\",\n    \"fallback\",\n    \"ElexonGenerationscraper\",\n    \"ElexonPowerTransmissionscraper\",\n    \"NordpoolGenerationscraper\",\n    \"NordpoolPowerTransmissionscraper\",\n    \"EliaGenerationscraper\",\n    \"EliaPowerTransmissionscraper\",\n    \"power_generation\",\n    \"power_transmission\",\n}\n\n\n@dataclass\nclass StaticMetrics:\n    \"\"\"Static AST and SLOC measurements for a candidate test suite.\"\"\"\n\n    sloc: int = 0\n    test_defs: int = 0\n    if_branches: int = 0\n    branch_breakdown: dict[str, int] = field(\n        default_factory=lambda: {\n            \"if_stmt\": 0,\n            \"if_exp\": 0,\n            \"comp_if\": 0,\n            \"match_cases\": 0,\n            \"while_stmt\": 0,\n            \"except_handlers\": 0,\n            \"short_circuit_branch\": 0,\n            \"dict_or_tuple_dispatch\": 0,\n        }\n    )\n    violations: list[str] = field(default_factory=list)\n\n\ndef _docstring_lines(tree: ast.AST) -> set[int]:\n    \"\"\"\n    Collect physical line numbers occupied by module, class, and function docstrings.\n\n    Excluding docstrings from SLOC prevents agents from stripping test documentation\n    to artificially lower SLOC without simplifying any test logic.\n\n    :param tree: Parsed module AST.\n    :return: Set of 1-based line numbers belonging to docstring literals.\n    \"\"\"\n    doc_lines: set[int] = set()\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and (\n            node.body\n            and isinstance(node.body[0], ast.Expr)\n            and isinstance(node.body[0].value, ast.Constant)\n            and isinstance(node.body[0].value.value, str)\n        ):\n            expr = node.body[0]\n            start = getattr(expr, \"lineno\", None)\n            end = getattr(expr, \"end_lineno\", start)\n            if start is not None and end is not None:\n                doc_lines.update(range(start, end + 1))\n    return doc_lines\n\n\ndef _count_file_sloc(source: str, tree: ast.AST) -> tuple[int, int]:\n    \"\"\"\n    Compute docstring-independent SLOC plus a semicolon multi-statement penalty.\n\n    :param source: Raw Python file content.\n    :param tree: Parsed AST of the file.\n    :return: Tuple of (effective_sloc, semicolon_count).\n    \"\"\"\n    doc_lines = _docstring_lines(tree)\n    code_lines: set[int] = set()\n    semicolons = 0\n\n    tokens = tokenize.generate_tokens(io.StringIO(source).readline)\n    for tok_type, tok_str, (srow, _), (erow, _), _ in tokens:\n        if tok_type in (\n            tokenize.COMMENT,\n            tokenize.NL,\n            tokenize.NEWLINE,\n            tokenize.INDENT,\n            tokenize.DEDENT,\n            tokenize.ENCODING,\n            tokenize.ENDMARKER,\n        ):\n            continue\n        if tok_type == tokenize.OP and tok_str == \";\":\n            semicolons += 1\n        for line_no in range(srow, erow + 1):\n            if line_no not in doc_lines:\n                code_lines.add(line_no)\n\n    return len(code_lines) + semicolons, semicolons\n\n\ndef _is_conditional_subscript_dispatch(node: ast.Subscript) -> bool:\n    \"\"\"\n    Detect inline dictionary or sequence indexing used to disguise an `if/else` branch.\n\n    Examples caught:\n    - `{True: \"bidding_zone\", False: \"bidding_zone_out\"}[cond]`\n    - `(\"bidding_zone_out\", \"bidding_zone\")[scraper_type is ElexonGenerationscraper]`\n    - `{ElexonGenerationscraper: \"bidding_zone\", ...}[scraper_type]`\n\n    :param node: AST Subscript node.\n    :return: True if the subscript acts as a conditional branch table.\n    \"\"\"\n    # Slice is itself a boolean/comparison expression: `table[a == b]` or `table[not x]`\n    if isinstance(node.slice, (ast.Compare, ast.BoolOp)) or (\n        isinstance(node.slice, ast.UnaryOp) and isinstance(node.slice.op, ast.Not)\n    ):\n        return True\n\n    # Dict literal keyed by booleans or known scraper/mode discriminators\n    if isinstance(node.value, ast.Dict):\n        for key in node.value.keys:\n            if isinstance(key, ast.Constant) and (\n                isinstance(key.value, bool) or key.value in DISCRIMINATOR_NAMES\n            ):\n                return True\n            if isinstance(key, ast.Name) and key.id in DISCRIMINATOR_NAMES:\n                return True\n\n    # Inline tuple/list literal indexed by a discriminator variable\n    if isinstance(node.value, (ast.Tuple, ast.List)):\n        for sub in ast.walk(node.slice):\n            if isinstance(sub, ast.Name) and sub.id in DISCRIMINATOR_NAMES:\n                return True\n\n    return False\n\n\ndef _analyze_ast_branches_and_hygiene(path: Path, tree: ast.AST, metrics: StaticMetrics) -> None:\n    \"\"\"\n    Walk a test module AST to count all branching constructs and enforce anti-gaming rules.\n\n    :param path: File path for reporting.\n    :param tree: Parsed AST.\n    :param metrics: Accumulator for static metrics and violations.\n    \"\"\"\n    rel = path.as_posix()\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n            if node.name.startswith(\"test_\"):\n                metrics.test_defs += 1\n                stmt_count = sum(1 for sub in ast.walk(node) if isinstance(sub, ast.stmt)) - 1\n                if stmt_count > MAX_STATEMENTS_PER_TEST_DEF:\n                    metrics.violations.append(\n                        f\"{rel}:{node.lineno}: `{node.name}` has {stmt_count} statements \"\n                        f\"(max {MAX_STATEMENTS_PER_TEST_DEF}); megatest consolidation is not allowed.\"\n                    )\n            for dec in node.decorator_list:\n                dec_src = ast.unparse(dec)\n                if any(\n                    marker in dec_src\n                    for marker in (\"pytest.mark.skip\", \"pytest.mark.skipif\", \"pytest.mark.xfail\")\n                ):\n                    metrics.violations.append(\n                        f\"{rel}:{node.lineno}: skip/xfail decorator `{dec_src}` is forbidden.\"\n                    )\n\n        elif isinstance(node, ast.If):\n            metrics.branch_breakdown[\"if_stmt\"] += 1\n\n        elif isinstance(node, ast.IfExp):\n            metrics.branch_breakdown[\"if_exp\"] += 1\n\n        elif isinstance(node, ast.comprehension):\n            metrics.branch_breakdown[\"comp_if\"] += len(node.ifs)\n\n        elif isinstance(node, ast.Match):\n            cases = len(node.cases) + sum(1 for c in node.cases if c.guard is not None)\n            metrics.branch_breakdown[\"match_cases\"] += max(1, cases)\n\n        elif isinstance(node, ast.While):\n            metrics.branch_breakdown[\"while_stmt\"] += 1\n\n        elif isinstance(node, ast.ExceptHandler):\n            metrics.branch_breakdown[\"except_handlers\"] += 1\n\n        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.BoolOp):\n            # Statement-level `cond and branch_a() or branch_b()`\n            metrics.branch_breakdown[\"short_circuit_branch\"] += len(node.value.values) - 1\n\n        elif isinstance(node, ast.Subscript) and _is_conditional_subscript_dispatch(node):\n            metrics.branch_breakdown[\"dict_or_tuple_dispatch\"] += 1\n\n        elif isinstance(node, ast.Call):\n            func_name = \"\"\n            if isinstance(node.func, ast.Name):\n                func_name = node.func.id\n            elif isinstance(node.func, ast.Attribute):\n                func_name = f\"{ast.unparse(node.func.value)}.{node.func.attr}\"\n            if func_name in {\"eval\", \"exec\", \"compile\"}:\n                metrics.violations.append(\n                    f\"{rel}:{getattr(node, 'lineno', 0)}: dynamic execution `{func_name}` is forbidden.\"\n                )\n            elif func_name in {\"pytest.skip\", \"pytest.xfail\"}:\n                metrics.violations.append(\n                    f\"{rel}:{getattr(node, 'lineno', 0)}: runtime `{func_name}` call is forbidden.\"\n                )\n\n\ndef _extract_asserted_strings_and_symbols(files: list[Path]) -> tuple[set[str], set[str], int]:\n    \"\"\"\n    Extract string literals and symbol names that participate in value assertions.\n\n    String literals count toward column verification when they appear:\n    1. Directly inside an `assert ...` statement or `pd.testing.assert_*` call;\n    2. Inside a local variable (e.g., `columns = [...]`, `expected = pd.DataFrame({...})`)\n       or `@pytest.mark.parametrize` table in a function/module that asserts on that variable;\n    3. Inside a helper function (`def _assert_*` or `assert_*`) called from a test.\n\n    :param files: Test files to inspect.\n    :return: Tuple of (asserted_string_literals, referenced_symbol_names, value_assertion_count).\n    \"\"\"\n    asserted_strings: set[str] = set()\n    referenced_symbols: set[str] = set()\n    value_assertions = 0\n\n    for path in files:\n        if not path.exists():\n            continue\n        tree = ast.parse(path.read_text(encoding=\"utf-8\"), filename=str(path))\n\n        for node in ast.walk(tree):\n            if isinstance(node, ast.Name):\n                referenced_symbols.add(node.id)\n            elif isinstance(node, ast.ImportFrom):\n                for alias in node.names:\n                    referenced_symbols.add(alias.name)\n\n        # Collect module-level assignments so we can resolve module constants used in assertions\n        module_bindings: dict[str, set[str]] = {}\n        for stmt in tree.body:\n            if isinstance(stmt, (ast.Assign, ast.AnnAssign)):\n                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]\n                strs = {\n                    sub.value\n                    for sub in ast.walk(stmt.value)\n                    if isinstance(sub, ast.Constant) and isinstance(sub.value, str)\n                } if stmt.value else set()\n                for target in targets:\n                    if isinstance(target, ast.Name):\n                        module_bindings[target.id] = strs\n\n        for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:\n            local_bindings: dict[str, set[str]] = dict(module_bindings)\n\n            # Strings bound via @pytest.mark.parametrize on this function\n            param_strings: set[str] = set()\n            for dec in fn.decorator_list:\n                if \"parametrize\" in ast.unparse(dec):\n                    for sub in ast.walk(dec):\n                        if isinstance(sub, ast.Constant) and isinstance(sub.value, str):\n                            param_strings.add(sub.value)\n            for arg in fn.args.args:\n                local_bindings[arg.arg] = set(param_strings)\n\n            for sub in ast.walk(fn):\n                if isinstance(sub, (ast.Assign, ast.AnnAssign)):\n                    targets = sub.targets if isinstance(sub, ast.Assign) else [sub.target]\n                    strs = {\n                        c.value\n                        for c in ast.walk(sub.value)\n                        if isinstance(c, ast.Constant) and isinstance(c.value, str)\n                    } if sub.value else set()\n                    for target in targets:\n                        for name_node in ast.walk(target):\n                            if isinstance(name_node, ast.Name):\n                                local_bindings.setdefault(name_node.id, set()).update(strs)\n\n            # Inspect actual assertions (ast.Assert and pd.testing.assert_*)\n            for sub in ast.walk(fn):\n                is_assert_stmt = isinstance(sub, ast.Assert)\n                is_pd_assert_call = (\n                    isinstance(sub, ast.Call)\n                    and \"assert_\" in ast.unparse(sub.func)\n                )\n                if not (is_assert_stmt or is_pd_assert_call):\n                    continue\n\n                # Reject tautological `assert True` or `assert 1`\n                if is_assert_stmt and isinstance(sub.test, ast.Constant) and bool(sub.test.value):\n                    continue\n\n                value_assertions += 1\n                for child in ast.walk(sub):\n                    if isinstance(child, ast.Constant) and isinstance(child.value, str):\n                        asserted_strings.add(child.value)\n                    elif isinstance(child, ast.Name) and child.id in local_bindings:\n                        asserted_strings.update(local_bindings[child.id])\n\n    return asserted_strings, referenced_symbols, value_assertions\n\n\ndef audit_sibling_normalizers_static(worktree: Path) -> list[str]:\n    \"\"\"\n    Verify statically that sibling normalizers in Elexon and Nordpool retain\n    explicit column assertions on both generation- and transmission-specific\n    `map_rename` output columns.\n\n    :param worktree: Candidate worktree root.\n    :return: List of violation descriptions (empty if valid).\n    \"\"\"\n    violations: list[str] = []\n    all_unit_files = sorted((worktree / \"tests/unit\").rglob(\"*.py\"))\n\n    for family, spec in SIBLING_NORMALIZER_SPECS.items():\n        family_dir = worktree / spec[\"test_rel_dir\"]\n        family_files = sorted(family_dir.rglob(\"*.py\")) if family_dir.exists() else []\n        target_files = family_files or all_unit_files\n        if not target_files:\n            violations.append(f\"[{family}] No unit test files found for {family} scrapers.\")\n            continue\n\n        asserted_cols, symbols, assertion_count = _extract_asserted_strings_and_symbols(target_files)\n        if assertion_count == 0:\n            violations.append(f\"[{family}] Zero value assertions found in {spec['test_rel_dir']}.\")\n            continue\n\n        for class_name, class_spec in spec[\"siblings\"].items():\n            if class_name not in symbols:\n                violations.append(\n                    f\"[{family}] Sibling scraper `{class_name}` is not referenced in {spec['test_rel_dir']}.\"\n                )\n            missing_distinguishing = sorted(class_spec[\"distinguishing_columns\"] - asserted_cols)\n            if missing_distinguishing:\n                violations.append(\n                    f\"[{family}] `{class_name}` is missing assertions on distinguishing normalized \"\n                    f\"columns: {missing_distinguishing}.\"\n                )\n\n        missing_shared = sorted(spec[\"shared_columns\"] - asserted_cols)\n        if missing_shared:\n            violations.append(\n                f\"[{family}] Missing assertions on shared `map_rename` normalized columns: {missing_shared}.\"\n            )\n\n    return violations\n\n\ndef run_sibling_mutation_probes(worktree: Path) -> list[str]:\n    \"\"\"\n    Execute fast, zero-disk-modification runtime sabotage probes against Elexon and\n    Nordpool unit tests to verify that corrupting each sibling's `map_rename`\n    output columns causes at least one unit test to FAIL.\n\n    This closes the Goodhart loophole where an agent mentions column names in dead\n    or non-semantic assertions while relying on `df.rename(columns=map_rename)`\n    to keep statement coverage at 100%.\n\n    :param worktree: Candidate worktree root.\n    :return: List of surviving mutant errors (empty if all mutants are killed).\n    \"\"\"\n    probes = [\n        (\n            \"ElexonGenerationscraper\",\n            \"remit_outages_scraping.scraping.elexon\",\n            \"tests/unit/scraping/elexon\",\n            {\"generation_unit_name\": \"__corrupted_gen_unit__\", \"bidding_zone\": \"__corrupted_zone__\"},\n        ),\n        (\n            \"ElexonPowerTransmissionscraper\",\n            \"remit_outages_scraping.scraping.elexon\",\n            \"tests/unit/scraping/elexon\",\n            {\"transmission_unit_name\": \"__corrupted_tx_unit__\", \"bidding_zone_out\": \"__corrupted_zone_out__\"},\n        ),\n        (\n            \"NordpoolGenerationscraper\",\n            \"remit_outages_scraping.scraping.nordpool\",\n            \"tests/unit/scraping/nordpool\",\n            {\"generation_unit_name\": \"__corrupted_np_gen__\", \"bidding_zone\": \"__corrupted_np_zone__\"},\n        ),\n        (\n            \"NordpoolPowerTransmissionscraper\",\n            \"remit_outages_scraping.scraping.nordpool\",\n            \"tests/unit/scraping/nordpool\",\n            {\"transmission_unit_name\": \"__corrupted_np_tx__\", \"bidding_zone_out\": \"__corrupted_np_out__\"},\n        ),\n    ]\n\n    failures: list[str] = []\n    for class_name, module_path, rel_test_dir, corruptions in probes:\n        target_dir = rel_test_dir if (worktree / rel_test_dir).exists() else \"tests/unit\"\n        probe_code = (\n            \"import importlib, sys, pytest\\n\"\n            f\"mod = importlib.import_module({module_path!r})\\n\"\n            f\"cls = getattr(mod, {class_name!r})\\n\"\n            \"orig_normalize = cls.normalize\\n\"\n            f\"corruptions = {corruptions!r}\\n\"\n            \"def _sabotaged_normalize(self, *args, **kwargs):\\n\"\n            \"    dfs = orig_normalize(self, *args, **kwargs)\\n\"\n            \"    out = []\\n\"\n            \"    for df in dfs:\\n\"\n            \"        if not df.empty:\\n\"\n            \"            df = df.copy()\\n\"\n            \"            for col, bad_val in corruptions.items():\\n\"\n            \"                if col in df.columns:\\n\"\n            \"                    df[col] = bad_val\\n\"\n            \"        out.append(df)\\n\"\n            \"    return out\\n\"\n            \"cls.normalize = _sabotaged_normalize\\n\"\n            f\"sys.exit(pytest.main(['-q', '--tb=no', '--no-header', {target_dir!r}]))\\n\"\n        )\n        proc = subprocess.run(\n            [\"uv\", \"run\", \"--no-sync\", \"python\", \"-c\", probe_code],\n            cwd=worktree,\n            capture_output=True,\n            text=True,\n            timeout=60,\n            check=False,\n        )\n        if proc.returncode == 0:\n            failures.append(\n                f\"Mutant survived: corrupting {list(corruptions)} in `{class_name}.normalize()` \"\n                f\"did not fail any test in `{target_dir}`.\"\n            )\n    return failures\n\n\ndef check_git_production_integrity(worktree: Path) -> list[str]:\n    \"\"\"\n    Ensure candidate worktree has not modified production code under `remit_outages_scraping/`.\n\n    :param worktree: Candidate worktree root.\n    :return: List of violations if production files were altered.\n    \"\"\"\n    if not (worktree / \".git\").exists():\n        return []\n\n    proc = subprocess.run(\n        [\"git\", \"--no-pager\", \"status\", \"--porcelain\", \"--\", PRODUCTION_PACKAGE, \"pyproject.toml\"],\n        cwd=worktree,\n        capture_output=True,\n        text=True,\n        timeout=15,\n        check=False,\n    )\n    if proc.returncode == 0 and proc.stdout.strip():\n        touched = [line.strip() for line in proc.stdout.splitlines() if line.strip()]\n        return [f\"Forbidden modification outside test suite: {touched}\"]\n    return []\n\n\ndef collect_static_metrics(worktree: Path) -> StaticMetrics:\n    \"\"\"\n    Scan all Python files in `tests/unit/` and `tests/integration/` for SLOC,\n    `test_defs`, `if_branches`, and static anti-Goodhart hygiene.\n\n    :param worktree: Candidate worktree root.\n    :return: Populated StaticMetrics instance.\n    \"\"\"\n    metrics = StaticMetrics()\n    test_files: list[Path] = []\n    for rel_dir in TARGET_TEST_DIRS:\n        dir_path = worktree / rel_dir\n        if not dir_path.exists():\n            metrics.violations.append(f\"Required test directory `{rel_dir}` is missing.\")\n            continue\n        test_files.extend(sorted(dir_path.rglob(\"*.py\")))\n\n    if not test_files:\n        metrics.violations.append(\"No Python test files found in target directories.\")\n        return metrics\n\n    for path in test_files:\n        try:\n            source = path.read_text(encoding=\"utf-8\")\n            tree = ast.parse(source, filename=str(path))\n        except SyntaxError as exc:\n            metrics.violations.append(f\"SyntaxError in {path.relative_to(worktree)}: {exc}\")\n            continue\n\n        file_sloc, _ = _count_file_sloc(source, tree)\n        metrics.sloc += file_sloc\n        _analyze_ast_branches_and_hygiene(path.relative_to(worktree), tree, metrics)\n\n    metrics.if_branches = sum(metrics.branch_breakdown.values())\n    metrics.violations.extend(audit_sibling_normalizers_static(worktree))\n    metrics.violations.extend(check_git_production_integrity(worktree))\n    return metrics\n\n\ndef _parse_pytest_counts(output: str) -> tuple[int, int, int, int]:\n    \"\"\"\n    Extract (passed, failed, errors, skipped) counts from pytest terminal summary.\n\n    :param output: Combined stdout/stderr from pytest.\n    :return: Tuple of (passed, failed, errors, skipped).\n    \"\"\"\n\n    def _extract(label: str) -> int:\n        matches = re.findall(rf\"(\\d+)\\s+{label}\\b\", output)\n        return int(matches[-1]) if matches else 0\n\n    return (\n        _extract(\"passed\"),\n        _extract(\"failed\"),\n        _extract(\"errors?\"),\n        _extract(\"skipped\"),\n    )\n\n\ndef run_pytest_and_coverage(worktree: Path) -> tuple[int, int, list[str]]:\n    \"\"\"\n    Execute pytest with statement coverage on `tests/unit` and `tests/integration`.\n\n    Uses worktree-local coverage files (never `/tmp`) and cleans them up on exit.\n\n    :param worktree: Candidate worktree root.\n    :return: Tuple of (passed_tests, covered_lines, violations).\n    \"\"\"\n    cov_data_file = worktree / \".coverage.judge\"\n    cov_json_file = worktree / \".coverage_judge.json\"\n    violations: list[str] = []\n    passed_tests = 0\n    covered_lines = 0\n\n    env = os.environ.copy()\n    env[\"COVERAGE_FILE\"] = str(cov_data_file)\n\n    try:\n        cmd = [\n            \"uv\",\n            \"run\",\n            \"--no-sync\",\n            \"pytest\",\n            *TARGET_TEST_DIRS,\n            f\"--cov={PRODUCTION_PACKAGE}\",\n            f\"--cov-report=json:{cov_json_file}\",\n            \"-q\",\n            \"--tb=short\",\n            \"--no-header\",\n        ]\n        proc = subprocess.run(\n            cmd,\n            cwd=worktree,\n            env=env,\n            capture_output=True,\n            text=True,\n            timeout=300,\n            check=False,\n        )\n        combined_output = f\"{proc.stdout}\\n{proc.stderr}\"\n        passed_tests, failed, errors, skipped = _parse_pytest_counts(combined_output)\n\n        if proc.returncode != 0 or failed > 0 or errors > 0:\n            violations.append(\n                f\"pytest failed (exit={proc.returncode}, passed={passed_tests}, \"\n                f\"failed={failed}, errors={errors}).\"\n            )\n        if passed_tests == 0:\n            violations.append(\"pytest reported 0 passed tests.\")\n        if skipped > 0:\n            violations.append(f\"pytest reported {skipped} skipped tests; skipping tests is forbidden.\")\n\n        if cov_json_file.exists():\n            cov_payload = json.loads(cov_json_file.read_text(encoding=\"utf-8\"))\n            covered_lines = int(cov_payload.get(\"totals\", {}).get(\"covered_lines\", 0))\n        else:\n            violations.append(\"Coverage JSON report was not produced.\")\n    finally:\n        for artifact in (cov_data_file, cov_json_file):\n            if artifact.exists():\n                artifact.unlink()\n\n    return passed_tests, covered_lines, violations\n\n\ndef compute_score(\n    *,\n    valid: bool,\n    sloc: int,\n    test_defs: int,\n    if_branches: int,\n    covered_lines: int,\n) -> float:\n    \"\"\"\n    Compute tournament scalar fitness score (higher is better; 0.0 if invalid).\n\n    Weighting rationale against Goodhart's Law:\n    - Each `if_branch` costs 8x as much as 1 SLOC and 4x as much as 1 `test_def`.\n      Consequently, merging two tests by introducing an `if/else` or ternary\n      `IfExp` branch yields a net *negative* score change unless the branch is\n      eliminated through clean parametrization.\n    - `test_defs` has a modest weight (2.0) so consolidating duplicate tests is\n      rewarded, but collapsing unrelated tests without reducing SLOC gives tiny gain\n      and hits `MAX_STATEMENTS_PER_TEST_DEF`.\n    - Extra covered statements above the 2600 baseline earn a small bonus (+0.5/line).\n\n    :param valid: Whether all hard validity and anti-Goodhart gates passed.\n    :param sloc: Effective docstring-free SLOC across `tests/unit` and `tests/integration`.\n    :param test_defs: Count of `def test_*` functions.\n    :param if_branches: Total AST branching constructs.\n    :param covered_lines: Covered statements in `remit_outages_scraping/`.\n    :return: Scalar score rounded to 2 decimal places.\n    \"\"\"\n    if not valid:\n        return 0.0\n\n    sloc_delta = BASELINE_SLOC - sloc\n    branch_delta = BASELINE_IF_BRANCHES - if_branches\n    test_def_delta = BASELINE_TEST_DEFS - test_defs\n    cov_bonus = max(0, covered_lines - BASELINE_COVERED_LINES)\n\n    raw_score = 1000.0 + (1.0 * sloc_delta) + (8.0 * branch_delta) + (2.0 * test_def_delta) + (0.5 * cov_bonus)\n    return round(raw_score, 2)\n\n\ndef evaluate_worktree(\n    worktree: str | Path = \".\",\n    *,\n    static_only: bool = False,\n    run_mutation_probes: bool = True,\n) -> dict[str, Any]:\n    \"\"\"\n    Evaluate a candidate git worktree and return the tournament verdict dictionary.\n\n    :param worktree: Path to the candidate worktree root.\n    :param static_only: If True, skip running pytest/coverage (for dry-run AST checks).\n    :param run_mutation_probes: If True and not `static_only`, run sibling normalizer\n                                runtime mutation probes.\n    :return: Dictionary with `{valid, score, sloc, passed_tests, test_defs, if_branches, covered_lines}`\n             plus diagnostic details.\n    \"\"\"\n    worktree_path = Path(worktree).resolve()\n    static = collect_static_metrics(worktree_path)\n    violations = list(static.violations)\n\n    if static_only:\n        passed_tests = 0\n        covered_lines = BASELINE_COVERED_LINES if not violations else 0\n    else:\n        passed_tests, covered_lines, runtime_violations = run_pytest_and_coverage(worktree_path)\n        violations.extend(runtime_violations)\n        if covered_lines < BASELINE_COVERED_LINES:\n            violations.append(\n                f\"Coverage regression: covered_lines={covered_lines} < baseline {BASELINE_COVERED_LINES}.\"\n            )\n        if not violations and run_mutation_probes:\n            violations.extend(run_sibling_mutation_probes(worktree_path))\n\n    valid = len(violations) == 0\n    score = compute_score(\n        valid=valid,\n        sloc=static.sloc,\n        test_defs=static.test_defs,\n        if_branches=static.if_branches,\n        covered_lines=covered_lines,\n    )\n\n    return {\n        \"valid\": valid,\n        \"score\": score,\n        \"sloc\": static.sloc,\n        \"passed_tests\": passed_tests,\n        \"test_defs\": static.test_defs,\n        \"if_branches\": static.if_branches,\n        \"covered_lines\": covered_lines,\n        \"branch_breakdown\": static.branch_breakdown,\n        \"violations\": violations,\n    }\n\n\ndef main(argv: list[str] | None = None) -> int:\n    \"\"\"CLI entrypoint for evaluating a candidate worktree.\"\"\"\n    parser = argparse.ArgumentParser(description=\"Evaluate candidate worktree for test simplification.\")\n    parser.add_argument(\n        \"worktree\",\n        nargs=\"?\",\n        default=\".\",\n        help=\"Path to the candidate git worktree (default: current directory).\",\n    )\n    parser.add_argument(\n        \"--worktree\",\n        dest=\"worktree_opt\",\n        default=None,\n        help=\"Optional explicit path to the candidate git worktree.\",\n    )\n    parser.add_argument(\n        \"--static-only\",\n        action=\"store_true\",\n        help=\"Run only static AST/SLOC and sibling-assertion checks without invoking pytest.\",\n    )\n    parser.add_argument(\n        \"--no-mutation-probes\",\n        action=\"store_true\",\n        help=\"Skip runtime sibling-normalizer mutation probes after pytest coverage.\",\n    )\n    args = parser.parse_args(argv)\n    target = args.worktree_opt if args.worktree_opt is not None else args.worktree\n\n    result = evaluate_worktree(\n        target,\n        static_only=args.static_only,\n        run_mutation_probes=not args.no_mutation_probes,\n    )\n    print(json.dumps(result, indent=2, sort_keys=False))\n    return 0 if result[\"valid\"] else 1\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"}], "grading": {"expectations": [{"text": "Enforces hard gates in `judge.py`: `pytest` 100% pass, linter (`ruff check`) clean, `covered_lines >= 2600`, and a minimum `test_*` function count floor", "passed": true, "evidence": "`judge.py` enforces `covered_lines >= 2600`, `test_defs` floor, `ruff check`, and `pytest` pass."}, {"text": "Counts `ast.If` statements inside test bodies while explicitly excluding `ast.IfExp` inline ternaries to prevent dictionary-lookup reward hacking", "passed": false, "evidence": "Failed: `judge.py` lines 318-323 (`elif isinstance(node, ast.IfExp): metrics.branch_breakdown[\"if_exp\"] += 1`) penalized inline `ast.IfExp` ternaries alongside `ast.If` statements, reproducing the exact Round 2 Goodhart reward-hacking incentive."}, {"text": "Explains or checks that statement coverage (`--cov`) remains 100% when `df.rename(columns=map_rename)` executes even if assertions on mapped output columns are dropped across sibling classes with separate `normalize()` methods", "passed": true, "evidence": "`judge.py` (`SIBLING_SCRAPER_SPECS`) checks required columns per sibling scraper class (`ElexonGenerationscraper`, `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper`, `NordpoolPowerTransmissionscraper`), though it failed to write `judge_notes.md`."}], "summary": {"passed": 2, "failed": 1, "total": 3, "pass_rate": 0.6667}, "timing": {"total_tokens": 43800, "duration_ms": 482000, "total_duration_seconds": 482.0}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "forget-team", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-11-02T10:46:41Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 119.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Stops and refuses to spawn 4 Herdr worker panes while `git status --porcelain` has uncommitted/untracked changes (`elia.py`, `scratch.py`)", "passed": true, "evidence": "Section 1 (Law 1: Clean Baseline Commit Exists \u2014 FAILED): explicitly halts before splitting panes and requires committing/stashing `elia.py` and removing/excluding `scratch.py`."}, {"text": "Flags that 'make the test suite cleaner and more Pythonic' is a qualitative/subjective goal that requires a measurable scalar target before running a tournament", "passed": true, "evidence": "Section 1 (Law 2: Measurable Target + Anti-Goodhart Gate Exists \u2014 FAILED): flags the qualitative goal and stops before spawning."}, {"text": "Proposes a two-part External Judge combining a Hard Invariant Gate (100% test pass + zero coverage loss + minimum test-function floor) and a Monotonic Scalar Score", "passed": true, "evidence": "Section 2 defines 6 Hard Invariant Gates (`covered_lines >= BASELINE_COVERED_LINES`, `test_defs >= MIN_TEST_DEFS`, 100% pytest pass, ruff clean, sibling output-column check) + `Score = SLOC + 2*passed_tests + 10*ast_if_statements` (excluding `ast.IfExp`)."}, {"text": "Requires user confirmation of the proposed External Judge metric before splitting Herdr panes or creating worktrees", "passed": true, "evidence": "Explicitly requires user confirmation of the proposed `Hard Gate + Scalar Score` External Judge before creating `.forget/w1..w4` or splitting panes."}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 189.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Adds `.forget/` to `.git/info/exclude` and symlinks `$PWD/.venv` into each `.forget/w$i/.venv` worktree", "passed": true, "evidence": "`runbook.sh` lines 16-20: `grep -qxF '.forget/' .git/info/exclude || echo '.forget/' >> .git/info/exclude` and `[ -d .venv ] && ln -s \"$PWD/.venv\" \".forget/w$i/.venv\"`."}, {"text": "Starts each Copilot worker via `herdr agent start` with `-- --reasoning-effort max`", "passed": true, "evidence": "`runbook.sh` line 31: `herdr agent start w$i --kind copilot --pane \"$pane_id\" -- --reasoning-effort max`."}, {"text": "Worker prompt instructs peers in Turn 2+ to inspect `git diff <best_sha>..forget-w<1..4>` and explicitly forbids workers from running `pytest` or `git commit`", "passed": true, "evidence": "`worker_prompt.txt` Rules 1 & 3: instructs `git diff bfa949a..forget-w<1..4>` and forbids running `pytest` or `git commit`."}, {"text": "Waits for workers using `sleep 10` followed by `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, and runs `./judge.py` sequentially from the Lead shell", "passed": true, "evidence": "`runbook.sh` lines 47-56: `sleep 10`, `for i in 1 2 3 4; do herdr agent wait w$i --timeout 600000 & done; wait`, `git -C .forget/w$i commit --no-verify`, and sequential `./judge.py`."}, {"text": "Performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (explicitly avoiding `/compact`, `/new`, or `/quit`) and resets worktrees via `git -C .forget/w$i reset --hard f86e656`", "passed": true, "evidence": "`runbook.sh` lines 72-78: `for p in \"$W1_PANE\" ...; do herdr pane close \"$p\"; done` and `for i in 1 2 3 4; do git -C .forget/w$i reset --hard f86e656; done`."}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 3, "failed": 0, "total": 3, "time_seconds": 445.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Enforces hard gates in `judge.py`: `pytest` 100% pass, linter (`ruff check`) clean, `covered_lines >= 2600`, and a minimum `test_*` function count floor", "passed": true, "evidence": "`judge.py` enforces `covered_lines >= 2600`, `test_defs >= 170`, non-empty test bodies, `ruff check` exit 0, and `pytest` 100% pass."}, {"text": "Counts `ast.If` statements inside test bodies while explicitly excluding `ast.IfExp` inline ternaries to prevent dictionary-lookup reward hacking", "passed": true, "evidence": "`judge.py` (`count_static_metrics`) counts `isinstance(child, ast.If)` only, explicitly excluding `ast.IfExp` inline ternaries, and rejects boolean/class-keyed dispatch tables (`_detect_branch_evasion_tables`)."}, {"text": "Explains or checks that statement coverage (`--cov`) remains 100% when `df.rename(columns=map_rename)` executes even if assertions on mapped output columns are dropped across sibling classes with separate `normalize()` methods", "passed": true, "evidence": "`judge.py` (`verify_sibling_normalizer_assertions`) and `judge_notes.md` Section 3.B explain why `--cov` stays at 2600 when `df.rename(columns=map_rename)` runs and AST-verifies required output columns per sibling scraper class."}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 116.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Stops and refuses to spawn 4 Herdr worker panes while `git status --porcelain` has uncommitted/untracked changes (`elia.py`, `scratch.py`)", "passed": true, "evidence": "Section 1 & Blocker A: halts launch due to dirty working tree (`elia.py` and `scratch.py`)."}, {"text": "Flags that 'make the test suite cleaner and more Pythonic' is a qualitative/subjective goal that requires a measurable scalar target before running a tournament", "passed": true, "evidence": "Blocker B flags 'Make the test suite cleaner and more Pythonic' as an unverifiable subjective objective."}, {"text": "Proposes a two-part External Judge combining a Hard Invariant Gate (100% test pass + zero coverage loss + minimum test-function floor) and a Monotonic Scalar Score", "passed": true, "evidence": "Section 3 defines 7 hard gates and a scalar score, though its gate runs `-m 'not integration'` which misses integration DB coverage and Postgres collision guardrails."}, {"text": "Requires user confirmation of the proposed External Judge metric before splitting Herdr panes or creating worktrees", "passed": true, "evidence": "Blocks launch until remediation and objective lock are confirmed."}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.2, "passed": 1, "failed": 4, "total": 5, "time_seconds": 145.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Adds `.forget/` to `.git/info/exclude` and symlinks `$PWD/.venv` into each `.forget/w$i/.venv` worktree", "passed": true, "evidence": "`runbook.sh` lines 16-32 adds `.forget/` to `.git/info/exclude` and symlinks `.venv`."}, {"text": "Starts each Copilot worker via `herdr agent start` with `-- --reasoning-effort max`", "passed": false, "evidence": "Failed: Hallucinated `herdr send --pane \"$PANE_ID\" --text \"... && copilot --allow-all\"` instead of `herdr agent start w$i --kind copilot --pane <id> -- --reasoning-effort max`."}, {"text": "Worker prompt instructs peers in Turn 2+ to inspect `git diff <best_sha>..forget-w<1..4>` and explicitly forbids workers from running `pytest` or `git commit`", "passed": false, "evidence": "Failed: `worker_prompt.txt` omitted peer cross-pollination (`git diff bfa949a..forget-w<1..4>`) and allowed workers to run `uv run --no-sync pytest -k \"not db\"` themselves."}, {"text": "Waits for workers using `sleep 10` followed by `herdr agent wait w$i --timeout 600000`, commits with `git -C .forget/w$i commit --no-verify`, and runs `./judge.py` sequentially from the Lead shell", "passed": false, "evidence": "Failed: Used hallucinated `herdr wait --pane \"$PANE_ID\" --idle` without `sleep 10` and committed without `--no-verify` (`git -C \"$WT_DIR\" commit -m ...`), which triggers slow pre-commit hooks on every candidate."}, {"text": "Performs the Forget Wipe by closing panes one-by-one in a `for p in ...; do herdr pane close \"$p\"; done` loop (explicitly avoiding `/compact`, `/new`, or `/quit`) and resets worktrees via `git -C .forget/w$i reset --hard f86e656`", "passed": false, "evidence": "Failed: Sent `/clear` inside existing panes (`herdr send --pane \"$PANE_ID\" --text \"/clear\" --enter`) instead of closing the panes via `herdr pane close \"$p\"`."}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6667, "passed": 2, "failed": 1, "total": 3, "time_seconds": 482.0, "tokens": 0, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Enforces hard gates in `judge.py`: `pytest` 100% pass, linter (`ruff check`) clean, `covered_lines >= 2600`, and a minimum `test_*` function count floor", "passed": true, "evidence": "`judge.py` enforces `covered_lines >= 2600`, `test_defs` floor, `ruff check`, and `pytest` pass."}, {"text": "Counts `ast.If` statements inside test bodies while explicitly excluding `ast.IfExp` inline ternaries to prevent dictionary-lookup reward hacking", "passed": false, "evidence": "Failed: `judge.py` lines 318-323 (`elif isinstance(node, ast.IfExp): metrics.branch_breakdown[\"if_exp\"] += 1`) penalized inline `ast.IfExp` ternaries alongside `ast.If` statements, reproducing the exact Round 2 Goodhart reward-hacking incentive."}, {"text": "Explains or checks that statement coverage (`--cov`) remains 100% when `df.rename(columns=map_rename)` executes even if assertions on mapped output columns are dropped across sibling classes with separate `normalize()` methods", "passed": true, "evidence": "`judge.py` (`SIBLING_SCRAPER_SPECS`) checks required columns per sibling scraper class (`ElexonGenerationscraper`, `ElexonPowerTransmissionscraper`, `NordpoolGenerationscraper`, `NordpoolPowerTransmissionscraper`), though it failed to write `judge_notes.md`."}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 251.0, "stddev": 171.6159, "min": 119.0, "max": 445.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "without_skill": {"pass_rate": {"mean": 0.6222, "stddev": 0.4018, "min": 0.2, "max": 1.0}, "time_seconds": {"mean": 247.6667, "stddev": 203.456, "min": 116.0, "max": 482.0}, "tokens": {"mean": 0.0, "stddev": 0.0, "min": 0, "max": 0}}, "delta": {"pass_rate": "+0.38", "time_seconds": "+3.3", "tokens": "+0"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+k\documentclass{article} %
+\usepackage[preprint]{colm2026_conference} %
+
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\definecolor{ours}{HTML}{1F5FBF}
+\definecolor{parallel}{HTML}{E0A100}
+\definecolor{single}{HTML}{8A8F99}
+\definecolor{pct}{HTML}{616E7C}
+\definecolor{better}{HTML}{3B7A57}  %
+\definecolor{worse}{HTML}{A8463F}   %
+\usepackage{lineno}
+
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
+
+\input{math_commands.tex}
+
+\title{Scaling Discovery Requires Forgetting}
+
+\author{Shangyin Tan$^1$, Ben Zhou$^1$, Lakshya A Agrawal$^1$, Jialin Zhang$^1$, Yilin Chen$^2$, \\
+\bf Qiuyang Mang$^1$, Donghyun Lee$^1$, Dennis Jacob$^1$, Koushik Sen$^1$, Alex Dimakis$^{1,3}$, \\ \bf Matei Zaharia$^1$ \\
+$^1$UC Berkeley \quad $^2$Stanford \quad $^3$Bespoke Labs}
+
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\definecolor{ailightnavy}{RGB}{140,170,215}
+\newcommand{\ai}[1]{{\color{ailightnavy}#1}}
+
+\begin{document}
+
+\ifcolmsubmission
+\linenumbers
+\fi
+
+\maketitle
+\fancyhead{}\renewcommand{\headrulewidth}{0pt} %
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/main.pdf}
+  \caption{Best score so far against total money spent on AtCoder Heuristic Contest 014 and Anthropic's VLIW kernel take-home, for the best replicate of each configuration. \textcolor{single}{\textbf{One autoresearch agent}} with the same session continued throughout and \textcolor{parallel}{\textbf{four parallel agents}} both plateau early. \textcolor{ours}{\textbf{A team of four agents}} plateaus as well, until each dotted line, where every state and session is discarded, and the team restarts from the best candidate; each forget unblocks the plateau and the score climbs again. All three use the same configuration and have the same total money spent.}
+  \label{fig:main}
+\end{figure}
+
+\begin{abstract}
+    Automated research with LLM agents has shown promising results in various domains. Through iterative refinement and scored verifiers, LLM agents are capable of discovering new ideas.
+    There are different ways to scale automated research: let one agent iterate for longer, run several agents in parallel, or further let the parallel agents communicate and build on one another's candidates.
+    However, we find that all three strategies eventually plateau as the agents accumulate history. Each agent becomes anchored to its own past attempts, making fewer and smaller edits. Beyond this point, additional budget brings little further improvement.
+    In this paper, we show that \textit{the key to scaling discovery further is to forget}. Periodically discarding the search state, including every agent's session and the candidate history, and restarting from the best candidate found so far, unblocks the search and pushes the same budget further.
+
+    We implement forgetting in a team of agents with communication and evaluate it on four tasks spanning heuristic programming, kernel optimization and model training. The results show up to 15\% improvement compared to parallel agents, and up to 39\% compared to a single agent.
+    Our results suggest that, for open-ended discovery, what an agent is allowed to remember matters as much as how much compute it is given.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/related}
+
+
+\input{sections/approach}
+\input{sections/experiments}
+\input{sections/analysis}
+\input{sections/conclusion}
+
+
+
+\bibliography{references}
+\bibliographystyle{colm2026_conference}
+
+\newpage
+\appendix
+\input{sections/appendix}
+
+\end{document}
